@@ -214,11 +214,18 @@ jobs:
         shell: pwsh
         run: |
           $yt = "artifacts/Download-Aja/tools/yt-dlp/yt-dlp.exe"
+          $ytDir = Split-Path $yt
           $deno = (Resolve-Path "artifacts/Download-Aja/tools/deno/deno.exe").Path
           $ffmpegDir = (Resolve-Path "artifacts/Download-Aja/tools/ffmpeg").Path
           $serve = Join-Path $env:RUNNER_TEMP "downloadaja-ytdlp-source"
           $out = Join-Path $env:RUNNER_TEMP "downloadaja-ytdlp-output"
-          New-Item -ItemType Directory -Force -Path $serve, $out | Out-Null
+          $ytCache = Join-Path $env:RUNNER_TEMP "downloadaja-ytdlp-cache"
+          $denoCache = Join-Path $env:RUNNER_TEMP "downloadaja-deno-cache"
+          New-Item -ItemType Directory -Force -Path $serve, $out, $ytCache, $denoCache | Out-Null
+
+          # Pastikan config eksternal/portable tidak dapat mengubah perilaku aplikasi.
+          $poisonConfig = Join-Path $ytDir "yt-dlp.conf"
+          Set-Content -Path $poisonConfig -Value "--proxy http://127.0.0.1:9" -Encoding UTF8
 
           $sample = Join-Path $serve "sample.mp4"
           & artifacts/Download-Aja/tools/ffmpeg/ffmpeg.exe -hide_banner -loglevel error -f lavfi -i "testsrc=size=96x54:rate=5" -t 1 -c:v mpeg4 -q:v 5 $sample
@@ -230,7 +237,10 @@ jobs:
           try {
             Start-Sleep -Seconds 2
 
-            $ytOutput = @(& $yt --no-update --no-remote-components --no-playlist --windows-filenames --newline --no-colors --js-runtimes "deno:$deno" --ffmpeg-location $ffmpegDir --paths $out --output "download.%(ext)s" --print "before_dl:__DA_TITLE__%(title)s" --print "after_move:__DA_FILE__%(filepath)s" --progress "http://127.0.0.1:18766/sample.mp4" 2>&1)
+            $previousDenoDir = $env:DENO_DIR
+            $env:DENO_DIR = $denoCache
+            $ytOutput = @(& $yt --ignore-config --no-plugin-dirs --cache-dir $ytCache --no-update --no-remote-components --no-playlist --windows-filenames --newline --no-colors --js-runtimes "deno:$deno" --ffmpeg-location $ffmpegDir --paths $out --output "download.%(ext)s" --print "before_dl:__DA_TITLE__%(title)s" --print "after_move:__DA_FILE__%(filepath)s" --progress "http://127.0.0.1:18766/sample.mp4" 2>&1)
+            $env:DENO_DIR = $previousDenoDir
             $ytExit = $LASTEXITCODE
             $ytOutput | ForEach-Object { Write-Host $_ }
 
@@ -247,6 +257,10 @@ jobs:
           finally {
             if ($server -and -not $server.HasExited) {
               Stop-Process -Id $server.Id -Force
+            }
+
+            if (Test-Path $poisonConfig) {
+              Remove-Item $poisonConfig -Force
             }
           }
 
