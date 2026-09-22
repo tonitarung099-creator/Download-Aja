@@ -341,7 +341,7 @@ public partial class MainWindow : Window
                 EngineStatusText.Text = $"Scheduler menjalankan {scheduledResult.Value} item antrean";
 
             UpdateStatusBar();
-            TryOpenClipboardUrlDialog();
+            await TryOpenClipboardUrlDialogAsync();
         }
         catch
         {
@@ -353,7 +353,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void TryOpenClipboardUrlDialog()
+    private async Task TryOpenClipboardUrlDialogAsync()
     {
         if (!_viewModel.ClipboardMonitoringEnabled || _clipboardDialogOpen)
             return;
@@ -396,7 +396,7 @@ public partial class MainWindow : Window
             if (dialog.ShowDialog() != true)
                 return;
 
-            _ = AddFromDialogAsync(dialog);
+            await AddFromDialogAsync(dialog);
         }
         finally
         {
@@ -427,6 +427,72 @@ public partial class MainWindow : Window
             MessageBox.Show(this, ex.Message, "Download Aja",
                 MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    private void DownloadsGrid_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (DownloadsGrid.SelectedItem is DownloadItem item &&
+            item.Status == DownloadStatus.Selesai)
+        {
+            OpenFile(item);
+        }
+    }
+
+    private void OpenFileMenu_Click(object sender, RoutedEventArgs e)
+    {
+        if (DownloadsGrid.SelectedItem is DownloadItem item)
+            OpenFile(item);
+    }
+
+    private void OpenFolderMenu_Click(object sender, RoutedEventArgs e)
+        => OpenFolder_Click(sender, e);
+
+    private void CopyUrlMenu_Click(object sender, RoutedEventArgs e)
+    {
+        if (DownloadsGrid.SelectedItem is not DownloadItem item ||
+            string.IsNullOrWhiteSpace(item.Url))
+            return;
+
+        try
+        {
+            Clipboard.SetText(item.Url);
+            EngineStatusText.Text = "URL disalin";
+        }
+        catch
+        {
+            EngineStatusText.Text = "Clipboard sedang tidak tersedia";
+        }
+    }
+
+    private async void StartMenu_Click(object sender, RoutedEventArgs e)
+    {
+        if (DownloadsGrid.SelectedItem is not DownloadItem item)
+            return;
+
+        await RunItemActionAsync(() => _viewModel.StartAsync(item), "Memulai download...");
+    }
+
+    private async void PauseMenu_Click(object sender, RoutedEventArgs e)
+    {
+        if (DownloadsGrid.SelectedItem is not DownloadItem item)
+            return;
+
+        await RunItemActionAsync(() => _viewModel.PauseAsync(item), "Menjeda download...");
+    }
+
+    private void OpenFile(DownloadItem item)
+    {
+        if (string.IsNullOrWhiteSpace(item.FilePath) || !File.Exists(item.FilePath))
+        {
+            EngineStatusText.Text = "File belum tersedia";
+            return;
+        }
+
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = item.FilePath,
+            UseShellExecute = true
+        });
     }
 
     private async Task RunItemActionAsync(Func<Task> action, string status)

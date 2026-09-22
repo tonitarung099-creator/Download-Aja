@@ -134,7 +134,19 @@
                           SelectionMode="Single"
                           HeadersVisibility="Column"
                           GridLinesVisibility="Horizontal"
-                          BorderBrush="#E2E8F0">
+                          BorderBrush="#E2E8F0"
+                          MouseDoubleClick="DownloadsGrid_MouseDoubleClick">
+                    <DataGrid.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="Buka File" Click="OpenFileMenu_Click"/>
+                            <MenuItem Header="Buka Folder" Click="OpenFolderMenu_Click"/>
+                            <Separator/>
+                            <MenuItem Header="Salin URL" Click="CopyUrlMenu_Click"/>
+                            <Separator/>
+                            <MenuItem Header="Mulai / Coba Lagi" Click="StartMenu_Click"/>
+                            <MenuItem Header="Jeda" Click="PauseMenu_Click"/>
+                        </ContextMenu>
+                    </DataGrid.ContextMenu>
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Nama" Binding="{Binding Name}" Width="2*"/>
                         <DataGridTextColumn Header="Kategori" Binding="{Binding Category}" Width="90"/>
