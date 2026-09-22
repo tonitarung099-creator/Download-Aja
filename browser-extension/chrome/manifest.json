@@ -1,15 +1,24 @@
 {
   "manifest_version": 3,
   "name": "Download Aja Integration",
-  "version": "0.2.0",
-  "description": "Kirim link download dari Chrome ke Download Aja.",
-  "permissions": ["contextMenus", "cookies", "downloads", "nativeMessaging", "storage"],
+  "version": "0.3.0",
+  "description": "Integrasi browser untuk Download Aja: tangkap download dan deteksi media.",
+  "permissions": [
+    "contextMenus",
+    "cookies",
+    "downloads",
+    "nativeMessaging",
+    "storage",
+    "tabs",
+    "webRequest"
+  ],
   "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "service_worker.js"
   },
   "options_page": "options.html",
   "action": {
-    "default_title": "Download Aja"
+    "default_title": "Download Aja - Media terdeteksi",
+    "default_popup": "popup.html"
   }
 }

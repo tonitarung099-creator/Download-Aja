@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <title>Download Aja</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      width: 440px;
+      max-height: 580px;
+      font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+      color: #0f172a;
+      background: #f8fafc;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      background: white;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    h1 { font-size: 16px; margin: 0; }
+    button {
+      border: 1px solid #cbd5e1;
+      background: white;
+      border-radius: 8px;
+      padding: 7px 10px;
+      cursor: pointer;
+    }
+    button.primary {
+      border-color: #2563eb;
+      background: #2563eb;
+      color: white;
+    }
+    button:disabled {
+      cursor: not-allowed;
+      opacity: .55;
+    }
+    #list {
+      padding: 10px;
+      max-height: 490px;
+      overflow-y: auto;
+    }
+    .empty {
+      padding: 34px 18px;
+      text-align: center;
+      color: #64748b;
+      line-height: 1.5;
+    }
+    .item {
+      padding: 12px;
+      margin-bottom: 8px;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 11px;
+    }
+    .name {
+      font-weight: 650;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .meta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 5px 0 9px;
+      color: #64748b;
+      font-size: 11px;
+    }
+    .stream {
+      color: #b45309;
+      font-weight: 600;
+    }
+    .row {
+      display: flex;
+      justify-content: flex-end;
+    }
+    #message {
+      display: none;
+      padding: 9px 12px;
+      margin: 10px;
+      border-radius: 9px;
+      background: #fff7ed;
+      color: #9a3412;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Media Terdeteksi</h1>
+    <button id="clear">Bersihkan</button>
+  </header>
+  <div id="message"></div>
+  <main id="list">
+    <div class="empty">Membaca media pada tab ini…</div>
+  </main>
+  <script src="popup.js"></script>
+</body>
+</html>
