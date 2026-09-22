@@ -66,7 +66,7 @@ public sealed class DownloadHistoryStore
     private static DownloadItem ToItem(DownloadRecord record, string defaultDirectory)
     {
         var processEngineInterrupted =
-            record.EngineKind is DownloadEngineKind.Ffmpeg or DownloadEngineKind.YtDlp
+            (record.EngineKind is DownloadEngineKind.Ffmpeg or DownloadEngineKind.YtDlp)
             && record.Status != DownloadStatus.Selesai
             && record.Status != DownloadStatus.Dibatalkan;
 
