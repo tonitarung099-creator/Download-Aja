@@ -67,13 +67,50 @@ jobs:
           $extract = Join-Path $env:RUNNER_TEMP "ffmpeg"
           Expand-Archive -Path $zip -DestinationPath $extract -Force
           $ffmpeg = Get-ChildItem -Path $extract -Filter ffmpeg.exe -Recurse | Select-Object -First 1
+          $ffprobe = Get-ChildItem -Path $extract -Filter ffprobe.exe -Recurse | Select-Object -First 1
           if (-not $ffmpeg) { throw "ffmpeg.exe tidak ditemukan dalam paket." }
+          if (-not $ffprobe) { throw "ffprobe.exe tidak ditemukan dalam paket." }
 
           New-Item -ItemType Directory -Force -Path artifacts/Download-Aja/tools/ffmpeg | Out-Null
           Copy-Item $ffmpeg.FullName artifacts/Download-Aja/tools/ffmpeg/ffmpeg.exe
+          Copy-Item $ffprobe.FullName artifacts/Download-Aja/tools/ffmpeg/ffprobe.exe
 
           $license = Get-ChildItem -Path $extract -Filter LICENSE.txt -Recurse | Select-Object -First 1
           if ($license) { Copy-Item $license.FullName artifacts/Download-Aja/tools/ffmpeg/LICENSE.txt }
+
+      - name: Bundle yt-dlp 2026.08.19
+        shell: pwsh
+        run: |
+          $url = "https://github.com/yt-dlp/yt-dlp/releases/download/2026.08.19/yt-dlp.exe"
+          $out = "artifacts/Download-Aja/tools/yt-dlp/yt-dlp.exe"
+          New-Item -ItemType Directory -Force -Path (Split-Path $out) | Out-Null
+          Invoke-WebRequest -Uri $url -OutFile $out
+
+          $actual = (Get-FileHash -Path $out -Algorithm SHA256).Hash.ToLowerInvariant()
+          $expected = "66674953fe251b89f4d08c5f0e35e0728679bd67ab3d7d05c0562af101dd3e7a"
+          if ($actual -ne $expected) { throw "Checksum yt-dlp tidak cocok: $actual" }
+
+          Copy-Item third-party/licenses/yt-dlp-UNLICENSE.txt artifacts/Download-Aja/tools/yt-dlp/LICENSE.txt
+
+      - name: Bundle Deno 2.9.7
+        shell: pwsh
+        run: |
+          $url = "https://github.com/denoland/deno/releases/download/v2.9.7/deno-x86_64-pc-windows-msvc.zip"
+          $zip = Join-Path $env:RUNNER_TEMP "deno.zip"
+          Invoke-WebRequest -Uri $url -OutFile $zip
+
+          $actual = (Get-FileHash -Path $zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          $expected = "a0c3101b4158d1dfb7d6a78a7bf0f3de80c96bb423c152beec8beb22786f2238"
+          if ($actual -ne $expected) { throw "Checksum Deno tidak cocok: $actual" }
+
+          $extract = Join-Path $env:RUNNER_TEMP "deno"
+          Expand-Archive -Path $zip -DestinationPath $extract -Force
+          $deno = Get-ChildItem -Path $extract -Filter deno.exe -Recurse | Select-Object -First 1
+          if (-not $deno) { throw "deno.exe tidak ditemukan dalam paket." }
+
+          New-Item -ItemType Directory -Force -Path artifacts/Download-Aja/tools/deno | Out-Null
+          Copy-Item $deno.FullName artifacts/Download-Aja/tools/deno/deno.exe
+          Copy-Item third-party/licenses/deno-MIT.txt artifacts/Download-Aja/tools/deno/LICENSE.txt
 
       - name: Verify bundled download engines
         shell: pwsh
@@ -83,6 +120,21 @@ jobs:
 
           & artifacts/Download-Aja/tools/ffmpeg/ffmpeg.exe -version
           if ($LASTEXITCODE -ne 0) { throw "ffmpeg.exe gagal dijalankan." }
+
+          & artifacts/Download-Aja/tools/ffmpeg/ffprobe.exe -version
+          if ($LASTEXITCODE -ne 0) { throw "ffprobe.exe gagal dijalankan." }
+
+          & artifacts/Download-Aja/tools/yt-dlp/yt-dlp.exe --version
+          if ($LASTEXITCODE -ne 0) { throw "yt-dlp.exe gagal dijalankan." }
+
+          & artifacts/Download-Aja/tools/deno/deno.exe --version
+          if ($LASTEXITCODE -ne 0) { throw "deno.exe gagal dijalankan." }
+
+          & artifacts/Download-Aja/tools/deno/deno.exe eval "console.log('Download Aja Deno OK')"
+          if ($LASTEXITCODE -ne 0) { throw "Deno eval gagal dijalankan." }
+
+          $extractors = & artifacts/Download-Aja/tools/yt-dlp/yt-dlp.exe --list-extractors
+          if (-not ($extractors -match "youtube")) { throw "Extractor YouTube tidak ditemukan di yt-dlp." }
 
       - name: Smoke test aria2 local HTTP download
         shell: pwsh
@@ -166,20 +218,24 @@ jobs:
       - name: Write portable build metadata
         shell: pwsh
         run: |
-          Set-Content -Path artifacts/Download-Aja/VERSION.txt -Value "0.4.0" -Encoding UTF8
+          Set-Content -Path artifacts/Download-Aja/VERSION.txt -Value "0.5.0" -Encoding UTF8
 
           $ariaHash = (Get-FileHash artifacts/Download-Aja/tools/aria2/aria2c.exe -Algorithm SHA256).Hash.ToLowerInvariant()
           $ffmpegHash = (Get-FileHash artifacts/Download-Aja/tools/ffmpeg/ffmpeg.exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          $ytDlpHash = (Get-FileHash artifacts/Download-Aja/tools/yt-dlp/yt-dlp.exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          $denoHash = (Get-FileHash artifacts/Download-Aja/tools/deno/deno.exe -Algorithm SHA256).Hash.ToLowerInvariant()
 
           $info = @(
-            "Download Aja 0.4.0",
+            "Download Aja 0.5.0",
             "Commit: $env:GITHUB_SHA",
             "Branch: $env:GITHUB_REF_NAME",
             "Workflow run: $env:GITHUB_RUN_NUMBER",
             "Build UTC: $([DateTime]::UtcNow.ToString('O'))",
             "Runtime: win-x64 self-contained",
             "aria2 SHA256: $ariaHash",
-            "FFmpeg SHA256: $ffmpegHash"
+            "FFmpeg SHA256: $ffmpegHash",
+            "yt-dlp SHA256: $ytDlpHash",
+            "Deno SHA256: $denoHash"
           )
 
           Set-Content -Path artifacts/Download-Aja/BUILD_INFO.txt -Value $info -Encoding UTF8

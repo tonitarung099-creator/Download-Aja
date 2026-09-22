@@ -65,7 +65,12 @@ public sealed class DownloadHistoryStore
 
     private static DownloadItem ToItem(DownloadRecord record, string defaultDirectory)
     {
-        var status = record.EngineKind == DownloadEngineKind.Ffmpeg && record.Status != DownloadStatus.Selesai
+        var processEngineInterrupted =
+            record.EngineKind is DownloadEngineKind.Ffmpeg or DownloadEngineKind.YtDlp
+            && record.Status != DownloadStatus.Selesai
+            && record.Status != DownloadStatus.Dibatalkan;
+
+        var status = processEngineInterrupted
             ? DownloadStatus.Gagal
             : record.Status switch
             {
@@ -86,8 +91,13 @@ public sealed class DownloadHistoryStore
             CompletedBytes = Math.Max(0, record.CompletedBytes),
             SpeedBytesPerSecond = 0,
             Status = status,
-            ErrorMessage = record.EngineKind == DownloadEngineKind.Ffmpeg && status == DownloadStatus.Gagal
-                ? "Stream belum selesai. Kirim ulang media dari browser untuk memulai ulang."
+            ErrorMessage = status == DownloadStatus.Gagal
+                ? record.EngineKind switch
+                {
+                    DownloadEngineKind.Ffmpeg => "Stream belum selesai. Kirim ulang media dari browser untuk memulai ulang.",
+                    DownloadEngineKind.YtDlp => "Unduhan YouTube terputus. Klik Mulai/Coba Lagi; yt-dlp akan melanjutkan file .part bila tersedia.",
+                    _ => record.ErrorMessage
+                }
                 : record.ErrorMessage,
             CreatedAt = record.CreatedAt == default ? DateTimeOffset.Now : record.CreatedAt,
             EngineKind = record.EngineKind,

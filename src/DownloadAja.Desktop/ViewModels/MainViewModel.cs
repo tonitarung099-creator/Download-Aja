@@ -13,6 +13,8 @@ public sealed class MainViewModel : IAsyncDisposable
     private readonly Aria2EngineHost _engine = new();
     private readonly FfmpegMediaDownloader _ffmpeg = new();
     private readonly Dictionary<string, FfmpegMediaSession> _ffmpegSessions = new();
+    private readonly YtDlpDownloader _ytDlp = new();
+    private readonly Dictionary<string, YtDlpSession> _ytDlpSessions = new();
     private readonly DownloadHistoryStore _historyStore;
     private readonly DownloadSettingsStore _settingsStore;
     private DateTimeOffset _lastAutoSave = DateTimeOffset.MinValue;
@@ -115,8 +117,10 @@ public sealed class MainViewModel : IAsyncDisposable
         CancellationToken ct = default)
     {
         var isStream = IsStreamRequest(requestContext);
+        var isYouTube = !isStream && IsYouTubeUrl(url);
         var targetDirectory = string.IsNullOrWhiteSpace(directoryPath) ? DownloadDirectory : directoryPath;
-        var normalizedOutputName = isStream ? null : NormalizeOutputFileName(outputFileName);
+        var normalizedOutputName = isStream || isYouTube ? null : NormalizeOutputFileName(outputFileName);
+        var youtubeOutputName = isYouTube ? NormalizeYouTubeOutputName(outputFileName) : null;
         var customOutputPath = normalizedOutputName is null
             ? null
             : GetUniquePath(targetDirectory, normalizedOutputName);
@@ -126,13 +130,19 @@ public sealed class MainViewModel : IAsyncDisposable
             Url = url,
             Name = isStream
                 ? BuildStreamFileName(requestContext?.SuggestedName)
-                : customOutputPath is null
-                    ? TryGetFileName(url)
-                    : Path.GetFileName(customOutputPath),
+                : isYouTube
+                    ? youtubeOutputName ?? "YouTube video"
+                    : customOutputPath is null
+                        ? TryGetFileName(url)
+                        : Path.GetFileName(customOutputPath),
             DirectoryPath = targetDirectory,
-            FilePath = customOutputPath,
+            FilePath = isYouTube ? null : customOutputPath,
             Status = DownloadStatus.Menunggu,
-            EngineKind = isStream ? DownloadEngineKind.Ffmpeg : DownloadEngineKind.Aria2
+            EngineKind = isStream
+                ? DownloadEngineKind.Ffmpeg
+                : isYouTube
+                    ? DownloadEngineKind.YtDlp
+                    : DownloadEngineKind.Aria2
         };
 
         Downloads.Insert(0, item);
@@ -171,6 +181,14 @@ public sealed class MainViewModel : IAsyncDisposable
         if (item.EngineKind == DownloadEngineKind.Ffmpeg)
         {
             StartFfmpeg(item, requestContext);
+            DownloadsView.Refresh();
+            await SaveStateAsync(ct);
+            return;
+        }
+
+        if (item.EngineKind == DownloadEngineKind.YtDlp)
+        {
+            StartYtDlp(item, requestContext);
             DownloadsView.Refresh();
             await SaveStateAsync(ct);
             return;
@@ -296,6 +314,9 @@ public sealed class MainViewModel : IAsyncDisposable
         if (item.EngineKind == DownloadEngineKind.Ffmpeg)
             throw new InvalidOperationException("Stream HLS/DASH belum mendukung jeda. Gunakan Hentikan lalu kirim ulang stream dari browser.");
 
+        if (item.EngineKind == DownloadEngineKind.YtDlp)
+            throw new InvalidOperationException("Unduhan YouTube belum mendukung jeda langsung. Gunakan Hentikan lalu Mulai/Coba Lagi; file .part akan dilanjutkan bila tersedia.");
+
         if (string.IsNullOrWhiteSpace(item.Gid) || item.Status != DownloadStatus.Mengunduh)
             return;
 
@@ -316,6 +337,19 @@ public sealed class MainViewModel : IAsyncDisposable
 
             item.SpeedBytesPerSecond = 0;
             item.Status = DownloadStatus.Dibatalkan;
+            DownloadsView.Refresh();
+            await SaveStateAsync(ct);
+            return;
+        }
+
+        if (item.EngineKind == DownloadEngineKind.YtDlp)
+        {
+            if (_ytDlpSessions.Remove(item.Id, out var youtubeSession))
+                await youtubeSession.DisposeAsync();
+
+            item.SpeedBytesPerSecond = 0;
+            item.Status = DownloadStatus.Dibatalkan;
+            item.ErrorMessage = "Dihentikan. Klik Mulai/Coba Lagi untuk melanjutkan file .part bila tersedia.";
             DownloadsView.Refresh();
             await SaveStateAsync(ct);
             return;
@@ -345,6 +379,9 @@ public sealed class MainViewModel : IAsyncDisposable
     {
         if (_ffmpegSessions.Remove(item.Id, out var mediaSession))
             await mediaSession.DisposeAsync();
+
+        if (_ytDlpSessions.Remove(item.Id, out var youtubeSession))
+            await youtubeSession.DisposeAsync();
 
         if (!string.IsNullOrWhiteSpace(item.Gid) &&
             item.Status is DownloadStatus.Mengunduh or DownloadStatus.Dijeda)
@@ -428,6 +465,59 @@ public sealed class MainViewModel : IAsyncDisposable
             await session.DisposeAsync();
         }
 
+        foreach (var pair in _ytDlpSessions.ToArray())
+        {
+            var item = Downloads.FirstOrDefault(x => x.Id == pair.Key);
+            var session = pair.Value;
+
+            if (item is null)
+            {
+                _ytDlpSessions.Remove(pair.Key);
+                await session.DisposeAsync();
+                continue;
+            }
+
+            if (!string.IsNullOrWhiteSpace(session.Title) &&
+                string.Equals(item.Name, "YouTube video", StringComparison.OrdinalIgnoreCase))
+            {
+                item.Name = session.Title;
+            }
+
+            item.TotalBytes = Math.Max(item.TotalBytes, session.TotalBytes);
+            item.CompletedBytes = Math.Max(item.CompletedBytes, session.DownloadedBytes);
+            item.SpeedBytesPerSecond = session.SpeedBytesPerSecond;
+
+            if (!session.HasExited)
+                continue;
+
+            item.SpeedBytesPerSecond = 0;
+            var finalPath = session.FinalPath;
+
+            if (session.ExitCode == 0 &&
+                !string.IsNullOrWhiteSpace(finalPath) &&
+                File.Exists(finalPath))
+            {
+                var length = new FileInfo(finalPath).Length;
+                item.FilePath = finalPath;
+                item.DirectoryPath = Path.GetDirectoryName(finalPath) ?? item.DirectoryPath;
+                item.Name = Path.GetFileName(finalPath);
+                item.TotalBytes = length;
+                item.CompletedBytes = length;
+                item.Status = DownloadStatus.Selesai;
+                item.ErrorMessage = null;
+            }
+            else if (item.Status != DownloadStatus.Dibatalkan)
+            {
+                item.Status = DownloadStatus.Gagal;
+                item.ErrorMessage = string.IsNullOrWhiteSpace(session.ErrorText)
+                    ? "yt-dlp gagal menyelesaikan unduhan YouTube."
+                    : session.ErrorText;
+            }
+
+            _ytDlpSessions.Remove(pair.Key);
+            await session.DisposeAsync();
+        }
+
         if (_queueAutoRun)
             await FillQueueSlotsAsync(ct);
 
@@ -460,7 +550,11 @@ public sealed class MainViewModel : IAsyncDisposable
             foreach (var session in _ffmpegSessions.Values.ToArray())
                 await session.DisposeAsync();
 
+            foreach (var session in _ytDlpSessions.Values.ToArray())
+                await session.DisposeAsync();
+
             _ffmpegSessions.Clear();
+            _ytDlpSessions.Clear();
             await _engine.DisposeAsync();
         }
     }
@@ -579,9 +673,77 @@ public sealed class MainViewModel : IAsyncDisposable
         }
     }
 
+    private void StartYtDlp(DownloadItem item, DownloadRequestContext? requestContext)
+    {
+        if (_ytDlpSessions.ContainsKey(item.Id))
+            return;
+
+        var directory = string.IsNullOrWhiteSpace(item.DirectoryPath)
+            ? DownloadDirectory
+            : item.DirectoryPath;
+
+        Directory.CreateDirectory(directory);
+
+        item.EngineKind = DownloadEngineKind.YtDlp;
+        item.FilePath = null;
+        item.TotalBytes = 0;
+        item.CompletedBytes = 0;
+        item.SpeedBytesPerSecond = 0;
+        item.Status = DownloadStatus.Mengunduh;
+        item.ErrorMessage = null;
+
+        var suggestedName = string.Equals(item.Name, "YouTube video", StringComparison.OrdinalIgnoreCase)
+            ? null
+            : item.Name;
+
+        try
+        {
+            _ytDlpSessions[item.Id] = _ytDlp.Start(
+                item.Url,
+                directory,
+                suggestedName,
+                _settings.SpeedLimitBytesPerSecond,
+                requestContext);
+        }
+        catch
+        {
+            item.Status = DownloadStatus.Gagal;
+            throw;
+        }
+    }
+
     private static bool IsStreamRequest(DownloadRequestContext? context)
         => string.Equals(context?.MediaKind, "hls", StringComparison.OrdinalIgnoreCase)
             || string.Equals(context?.MediaKind, "dash", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsYouTubeUrl(string url)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            return false;
+
+        var host = uri.Host.ToLowerInvariant();
+        return host == "youtu.be"
+            || host == "youtube.com"
+            || host.EndsWith(".youtube.com", StringComparison.Ordinal)
+            || host == "youtube-nocookie.com"
+            || host.EndsWith(".youtube-nocookie.com", StringComparison.Ordinal);
+    }
+
+    private static string? NormalizeYouTubeOutputName(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+
+        var baseName = Path.GetFileNameWithoutExtension(value.Trim());
+        foreach (var invalid in Path.GetInvalidFileNameChars())
+            baseName = baseName.Replace(invalid, '_');
+
+        baseName = baseName.Trim(' ', '.');
+        if (string.IsNullOrWhiteSpace(baseName))
+            return null;
+
+        return baseName.Length > 120 ? baseName[..120] : baseName;
+    }
 
     private static string BuildStreamFileName(string? suggestedName)
     {

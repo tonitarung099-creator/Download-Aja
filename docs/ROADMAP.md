@@ -38,6 +38,7 @@
 - [x] Interception download Chrome yang dapat dinyalakan/dimatikan dari extension
 - [x] Deteksi media langsung non-DRM di halaman
 - [x] HLS/DASH non-DRM melalui FFmpeg
+- [x] YouTube publik/non-DRM melalui yt-dlp + Deno portable
 - [ ] Pause/resume khusus stream FFmpeg
 - [x] Dukungan wizard Chrome/Edge/Brave/Vivaldi dengan registry Chromium fallback
 - [x] Beberapa ID extension sekaligus untuk browser berbeda
@@ -47,7 +48,7 @@
 ## Tahap 4 — Kualitas
 - [x] Smoke test persistence dan klasifikasi
 - [x] Validasi JavaScript extension
-- [x] Verifikasi executable aria2/FFmpeg di CI
+- [x] Verifikasi executable aria2/FFmpeg/yt-dlp/Deno di CI
 - [x] Smoke test HLS lokal melalui FFmpeg
 - [ ] Test unit lebih lengkap
 - [x] Test integrasi HTTP lokal untuk aria2

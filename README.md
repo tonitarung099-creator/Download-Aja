@@ -7,6 +7,7 @@
 - Desktop: C# / .NET 8 / WPF
 - Download HTTP/HTTPS: aria2 1.37.0 melalui JSON-RPC lokal
 - HLS/DASH non-DRM: FFmpeg 8.1.3 yang dibundel di portable
+- YouTube publik/non-DRM: yt-dlp 2026.08.19 + Deno 2.9.7 + FFmpeg
 - Integrasi Chrome: Manifest V3 + Native Messaging
 - Distribusi development: portable folder multi-file dalam ZIP
 - Tidak membutuhkan installer atau hak Administrator untuk menjalankan aplikasi
@@ -31,6 +32,7 @@
 - Cookie/referrer/User-Agent opsional untuk link yang membutuhkan sesi login
 - Deteksi media langsung di tab Chrome
 - Download HLS/DASH non-DRM melalui FFmpeg
+- Download URL video YouTube publik/non-DRM melalui yt-dlp (playlist dimatikan)
 
 ## Menjalankan portable
 
@@ -65,7 +67,7 @@ docs/                         arsitektur dan roadmap
 
 ## Catatan media
 
-Deteksi media ditujukan untuk media langsung dan stream HLS/DASH **non-DRM**. Download Aja tidak dirancang untuk melewati DRM atau kontrol akses layanan.
+Deteksi media ditujukan untuk media langsung, stream HLS/DASH **non-DRM**, dan URL YouTube publik/non-DRM. Download Aja tidak dirancang untuk melewati DRM, paywall, login/access control, atau pembatasan hak akses layanan.
 
 
 ## Uji manual

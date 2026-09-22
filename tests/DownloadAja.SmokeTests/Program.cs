@@ -14,6 +14,8 @@ Check(new DownloadItem { Name = "musik.flac" }.Category == "Audio", "Kategori FL
 Check(new DownloadItem { Name = "laporan.pdf" }.Category == "Dokumen", "Kategori PDF harus Dokumen.");
 Check(new DownloadItem { Name = "setup.exe" }.Category == "Program", "Kategori EXE harus Program.");
 Check(new DownloadItem { Name = "backup.7z" }.Category == "Arsip", "Kategori 7Z harus Arsip.");
+Check(new DownloadItem { Name = "YouTube video", EngineKind = DownloadEngineKind.YtDlp }.Category == "Video",
+    "Engine yt-dlp harus dikategorikan sebagai Video.");
 
 var settings = new DownloadSettings
 {
@@ -100,6 +102,27 @@ try
     Check(ffmpegRestored.Count == 1, "Riwayat stream FFmpeg harus dapat dimuat.");
     Check(ffmpegRestored[0].EngineKind == DownloadEngineKind.Ffmpeg, "Engine FFmpeg harus dipertahankan.");
     Check(ffmpegRestored[0].Status == DownloadStatus.Gagal, "Stream FFmpeg yang belum selesai harus dipulihkan sebagai Gagal.");
+
+    var youtubeSource = new[]
+    {
+        new DownloadItem
+        {
+            Name = "Contoh YouTube",
+            Url = "https://www.youtube.com/watch?v=example",
+            DirectoryPath = tempDirectory,
+            CompletedBytes = 4321,
+            Status = DownloadStatus.Mengunduh,
+            EngineKind = DownloadEngineKind.YtDlp
+        }
+    };
+
+    await store.SaveAsync(youtubeSource);
+    var youtubeRestored = await store.LoadAsync(tempDirectory);
+    Check(youtubeRestored.Count == 1, "Riwayat yt-dlp harus dapat dimuat.");
+    Check(youtubeRestored[0].EngineKind == DownloadEngineKind.YtDlp, "Engine yt-dlp harus dipertahankan.");
+    Check(youtubeRestored[0].Status == DownloadStatus.Gagal, "yt-dlp yang terputus harus dipulihkan sebagai Gagal.");
+    Check(youtubeRestored[0].ErrorMessage?.Contains(".part", StringComparison.OrdinalIgnoreCase) == true,
+        "Riwayat yt-dlp terputus harus menjelaskan resume .part.");
 }
 finally
 {

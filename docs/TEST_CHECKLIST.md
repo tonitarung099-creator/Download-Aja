@@ -90,3 +90,15 @@ Kirim:
 6. file log terbaru dari `data/logs` jika dibuat.
 
 Jangan kirim cookie, password, token, atau API key.
+
+
+## J. YouTube publik/non-DRM
+
+- [ ] Salin URL video YouTube publik lalu Tambah URL.
+- [ ] Item dikenali sebagai kategori Video.
+- [ ] yt-dlp mulai mengunduh tanpa meminta instal Python/Node/Deno.
+- [ ] Progress, kecepatan, dan ETA tampil saat ukuran dapat diketahui.
+- [ ] Setelah selesai, video dan audio sudah tergabung lewat FFmpeg.
+- [ ] Hentikan di tengah download lalu Mulai/Coba Lagi dan pastikan file .part dilanjutkan.
+- [ ] URL playlist dengan parameter video hanya mengunduh satu video.
+- [ ] Video DRM/private/berkontrol akses tidak dicoba dibypass.

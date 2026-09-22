@@ -57,7 +57,7 @@ public partial class DiagnosticsWindow : Window
                 Timeout = TimeSpan.FromSeconds(10)
             };
             http.DefaultRequestHeaders.UserAgent.Add(
-                new ProductInfoHeaderValue("DownloadAja", "0.4.0"));
+                new ProductInfoHeaderValue("DownloadAja", "0.5.0"));
 
             using var response = await http.GetAsync(
                 "https://api.github.com/repos/tonitarung099-creator/Download-Aja/releases/latest");
@@ -161,6 +161,9 @@ public partial class DiagnosticsWindow : Window
         var baseDir = AppContext.BaseDirectory;
         var aria = Path.Combine(baseDir, "tools", "aria2", "aria2c.exe");
         var ffmpeg = Path.Combine(baseDir, "tools", "ffmpeg", "ffmpeg.exe");
+        var ffprobe = Path.Combine(baseDir, "tools", "ffmpeg", "ffprobe.exe");
+        var ytDlp = Path.Combine(baseDir, "tools", "yt-dlp", "yt-dlp.exe");
+        var deno = Path.Combine(baseDir, "tools", "deno", "deno.exe");
         var bridge = BrowserIntegrationService.BridgePath;
         var extension = BrowserIntegrationService.ExtensionDirectory;
         var dataDir = Path.Combine(baseDir, "data");
@@ -199,6 +202,9 @@ public partial class DiagnosticsWindow : Window
         builder.AppendLine();
         builder.AppendLine($"aria2: {(File.Exists(aria) ? "OK" : "TIDAK DITEMUKAN")} — {aria}");
         builder.AppendLine($"FFmpeg: {(File.Exists(ffmpeg) ? "OK" : "TIDAK DITEMUKAN")} — {ffmpeg}");
+        builder.AppendLine($"ffprobe: {(File.Exists(ffprobe) ? "OK" : "TIDAK DITEMUKAN")} — {ffprobe}");
+        builder.AppendLine($"yt-dlp: {(File.Exists(ytDlp) ? "OK" : "TIDAK DITEMUKAN")} — {ytDlp}");
+        builder.AppendLine($"Deno: {(File.Exists(deno) ? "OK" : "TIDAK DITEMUKAN")} — {deno}");
         builder.AppendLine($"Browser bridge: {(File.Exists(bridge) ? "OK" : "TIDAK DITEMUKAN")} — {bridge}");
         builder.AppendLine($"Extension folder: {(Directory.Exists(extension) ? "OK" : "TIDAK DITEMUKAN")} — {extension}");
         builder.AppendLine();

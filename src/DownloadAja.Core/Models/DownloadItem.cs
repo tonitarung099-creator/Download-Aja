@@ -78,9 +78,20 @@ public sealed class DownloadItem : INotifyPropertyChanged
     }
 
     public DownloadStatus Status { get => _status; set => Set(ref _status, value); }
-    public DownloadEngineKind EngineKind { get => _engineKind; set => Set(ref _engineKind, value); }
 
-    public string Category => ClassifyCategory(Name, Url);
+    public DownloadEngineKind EngineKind
+    {
+        get => _engineKind;
+        set
+        {
+            if (!Set(ref _engineKind, value)) return;
+            OnPropertyChanged(nameof(Category));
+        }
+    }
+
+    public string Category => EngineKind == DownloadEngineKind.YtDlp
+        ? "Video"
+        : ClassifyCategory(Name, Url);
     public double ProgressPercent => TotalBytes <= 0 ? 0 : Math.Clamp(CompletedBytes * 100d / TotalBytes, 0, 100);
     public string ProgressText => $"{ProgressPercent:F0}%";
     public string SizeText => TotalBytes <= 0 ? "—" : $"{FormatBytes(CompletedBytes)} / {FormatBytes(TotalBytes)}";
