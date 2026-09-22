@@ -95,6 +95,9 @@ Jangan kirim cookie, password, token, atau API key.
 ## J. YouTube publik/non-DRM
 
 - [ ] Salin URL video YouTube publik lalu Tambah URL.
+- [ ] Pilih kualitas 1080p/720p lalu pastikan item memakai profil yang dipilih.
+- [ ] Masukkan item YouTube berkualitas tertentu ke antrean, tutup/buka aplikasi, lalu pastikan kualitasnya tidak kembali ke Best.
+- [ ] Ubah kualitas di popup extension dan pastikan overlay menampilkan kualitas yang sama.
 - [ ] Pada tab YouTube, popup extension menampilkan tombol Download video halaman ini.
 - [ ] Pemutar YouTube menampilkan tombol overlay Download Aja.
 - [ ] Navigasi SPA ke video YouTube lain tidak membuat tombol overlay ganda.
