@@ -1,8 +1,8 @@
 <Window x:Class="DownloadAja.Desktop.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Download Aja" Height="720" Width="1180"
-        MinHeight="560" MinWidth="900"
+        Title="Download Aja" Height="720" Width="1220"
+        MinHeight="560" MinWidth="960"
         WindowStartupLocation="CenterScreen"
         Background="#FFFFFF"
         Loaded="Window_Loaded"
@@ -18,11 +18,12 @@
                 <StackPanel Orientation="Horizontal">
                     <Button Click="AddUrl_Click" FontWeight="SemiBold">＋ Tambah URL</Button>
                     <Button Click="Start_Click">▶ Mulai/Lanjut</Button>
+                    <Button Click="StartQueue_Click">▶▶ Mulai Antrean</Button>
                     <Button Click="Pause_Click">⏸ Jeda</Button>
                     <Button Click="Stop_Click">■ Hentikan</Button>
                     <Button Click="Delete_Click">🗑 Hapus</Button>
                     <Button Click="OpenFolder_Click">📁 Buka Folder</Button>
-                    <Button IsEnabled="False" ToolTip="Scheduler otomatis akan ditambahkan setelah antrean stabil">🕒 Scheduler</Button>
+                    <Button Click="Scheduler_Click">🕒 Scheduler</Button>
                 </StackPanel>
                 <TextBlock Grid.Column="1" Text="DOWNLOAD AJA" VerticalAlignment="Center"
                            HorizontalAlignment="Center" FontWeight="Bold" FontSize="18" Foreground="#0F172A"/>
@@ -41,6 +42,14 @@
             <Separator/>
             <StatusBarItem>
                 <TextBlock x:Name="ActiveStatusText" Text="Aktif: 0"/>
+            </StatusBarItem>
+            <Separator/>
+            <StatusBarItem>
+                <TextBlock x:Name="QueueStatusText" Text="Antrean: 0"/>
+            </StatusBarItem>
+            <Separator/>
+            <StatusBarItem>
+                <TextBlock x:Name="SchedulerStatusText" Text="Scheduler: nonaktif"/>
             </StatusBarItem>
         </StatusBar>
 
@@ -80,10 +89,8 @@
                         </ListBox>
 
                         <TextBlock Text="ALAT" FontSize="11" Foreground="#64748B" FontWeight="Bold" Margin="8,20,8,5"/>
-                        <ListBox BorderThickness="0" Background="Transparent">
-                            <ListBoxItem Padding="10,8" IsEnabled="False">Scheduler</ListBoxItem>
-                            <ListBoxItem Padding="10,8" IsEnabled="False">Browser</ListBoxItem>
-                        </ListBox>
+                        <TextBlock Margin="10,6,8,0" Text="Antrean dapat dijalankan langsung atau dijadwalkan." TextWrapping="Wrap"
+                                   Foreground="#64748B" FontSize="11"/>
                     </StackPanel>
                 </ScrollViewer>
             </Border>

@@ -60,7 +60,12 @@ public partial class MainWindow : Window
         {
             await _viewModel.InitializeAsync();
             EngineStatusText.Text = "Mesin download siap";
+            UpdateStatusBar();
             _refreshTimer.Start();
+
+            var scheduledResult = await _viewModel.TryRunScheduledQueueAsync(DateTimeOffset.Now);
+            if (scheduledResult.HasValue)
+                EngineStatusText.Text = $"Scheduler menjalankan {scheduledResult.Value} item antrean";
         }
         catch (Exception ex)
         {
@@ -108,6 +113,7 @@ public partial class MainWindow : Window
 
             SelectItem(item);
             EngineStatusText.Text = dialog.StartImmediately ? "Download dimulai" : "Masuk antrean";
+            UpdateStatusBar();
         }
         catch (Exception ex)
         {
@@ -121,6 +127,25 @@ public partial class MainWindow : Window
     {
         if (DownloadsGrid.SelectedItem is not DownloadItem item) return;
         await RunItemActionAsync(() => _viewModel.StartAsync(item), "Memulai download...");
+    }
+
+    private async void StartQueue_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            EngineStatusText.Text = "Memulai antrean...";
+            var count = await _viewModel.StartQueuedAsync();
+            EngineStatusText.Text = count == 0
+                ? "Tidak ada item dalam antrean"
+                : $"{count} item antrean dimulai";
+            UpdateStatusBar();
+        }
+        catch (Exception ex)
+        {
+            EngineStatusText.Text = "Gagal memulai antrean";
+            MessageBox.Show(this, ex.Message, "Download Aja",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     private async void Pause_Click(object sender, RoutedEventArgs e)
@@ -167,6 +192,32 @@ public partial class MainWindow : Window
                 FileName = directory,
                 UseShellExecute = true
             });
+        }
+    }
+
+    private async void Scheduler_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new SchedulerWindow(
+            _viewModel.SchedulerEnabled ? _viewModel.ScheduledQueueStartAt : null)
+        {
+            Owner = this
+        };
+
+        if (dialog.ShowDialog() != true)
+            return;
+
+        try
+        {
+            await _viewModel.ConfigureSchedulerAsync(dialog.ScheduledAt);
+            EngineStatusText.Text = dialog.ScheduledAt.HasValue
+                ? $"Scheduler aktif: {dialog.ScheduledAt.Value.LocalDateTime:dd/MM/yyyy HH:mm}"
+                : "Scheduler dinonaktifkan";
+            UpdateStatusBar();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "Download Aja",
+                MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -232,8 +283,12 @@ public partial class MainWindow : Window
         try
         {
             await _viewModel.RefreshAsync();
-            SpeedStatusText.Text = $"Kecepatan: {FormatBytes(_viewModel.TotalSpeed)}/s";
-            ActiveStatusText.Text = $"Aktif: {_viewModel.ActiveCount}";
+
+            var scheduledResult = await _viewModel.TryRunScheduledQueueAsync(DateTimeOffset.Now);
+            if (scheduledResult.HasValue)
+                EngineStatusText.Text = $"Scheduler menjalankan {scheduledResult.Value} item antrean";
+
+            UpdateStatusBar();
         }
         catch
         {
@@ -252,6 +307,7 @@ public partial class MainWindow : Window
             EngineStatusText.Text = status;
             await action();
             EngineStatusText.Text = "Siap";
+            UpdateStatusBar();
         }
         catch (Exception ex)
         {
@@ -259,6 +315,16 @@ public partial class MainWindow : Window
             MessageBox.Show(this, ex.Message, "Download Aja",
                 MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    private void UpdateStatusBar()
+    {
+        SpeedStatusText.Text = $"Kecepatan: {FormatBytes(_viewModel.TotalSpeed)}/s";
+        ActiveStatusText.Text = $"Aktif: {_viewModel.ActiveCount}";
+        QueueStatusText.Text = $"Antrean: {_viewModel.QueuedCount}";
+        SchedulerStatusText.Text = _viewModel.SchedulerEnabled && _viewModel.ScheduledQueueStartAt.HasValue
+            ? $"Scheduler: {_viewModel.ScheduledQueueStartAt.Value.LocalDateTime:dd/MM HH:mm}"
+            : "Scheduler: nonaktif";
     }
 
     private void SelectItem(DownloadItem item)

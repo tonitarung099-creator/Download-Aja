@@ -24,6 +24,9 @@ public sealed class MainViewModel : IAsyncDisposable
 
     public int ConnectionsPerDownload => _settings.ConnectionsPerDownload;
     public long SpeedLimitBytesPerSecond => _settings.SpeedLimitBytesPerSecond;
+    public bool SchedulerEnabled => _settings.SchedulerEnabled;
+    public DateTimeOffset? ScheduledQueueStartAt => _settings.ScheduledQueueStartAt;
+    public int QueuedCount => Downloads.Count(x => x.Status == DownloadStatus.Menunggu && string.IsNullOrWhiteSpace(x.Gid));
 
     public MainViewModel()
     {
@@ -63,12 +66,18 @@ public sealed class MainViewModel : IAsyncDisposable
 
     public async Task UpdateSettingsAsync(int connectionsPerDownload, long speedLimitBytesPerSecond, CancellationToken ct = default)
     {
-        _settings = new DownloadSettings
-        {
-            ConnectionsPerDownload = connectionsPerDownload,
-            SpeedLimitBytesPerSecond = speedLimitBytesPerSecond
-        }.Normalize();
+        _settings.ConnectionsPerDownload = connectionsPerDownload;
+        _settings.SpeedLimitBytesPerSecond = speedLimitBytesPerSecond;
+        _settings.Normalize();
 
+        await _settingsStore.SaveAsync(_settings, ct);
+    }
+
+    public async Task ConfigureSchedulerAsync(DateTimeOffset? scheduledAt, CancellationToken ct = default)
+    {
+        _settings.SchedulerEnabled = scheduledAt.HasValue;
+        _settings.ScheduledQueueStartAt = scheduledAt;
+        _settings.Normalize();
         await _settingsStore.SaveAsync(_settings, ct);
     }
 
@@ -117,17 +126,23 @@ public sealed class MainViewModel : IAsyncDisposable
         var client = await _engine.EnsureStartedAsync(ct);
         item.ErrorMessage = null;
 
-        if (!string.IsNullOrWhiteSpace(item.Gid) && item.Status == DownloadStatus.Dijeda)
+        if (!string.IsNullOrWhiteSpace(item.Gid))
         {
-            await client.UnpauseAsync(item.Gid, ct);
-            item.Status = DownloadStatus.Mengunduh;
-            DownloadsView.Refresh();
-            await SaveStateAsync(ct);
-            return;
-        }
+            if (item.Status == DownloadStatus.Dijeda)
+            {
+                await client.UnpauseAsync(item.Gid, ct);
+                item.Status = DownloadStatus.Mengunduh;
+                DownloadsView.Refresh();
+                await SaveStateAsync(ct);
+                return;
+            }
 
-        if (item.Status == DownloadStatus.Mengunduh)
-            return;
+            if (item.Status is DownloadStatus.Mengunduh or DownloadStatus.Menunggu)
+                return;
+
+            // GID dari hasil error/removed tidak dipakai untuk sesi baru.
+            item.Gid = null;
+        }
 
         var directory = string.IsNullOrWhiteSpace(item.DirectoryPath)
             ? DownloadDirectory
@@ -150,6 +165,50 @@ public sealed class MainViewModel : IAsyncDisposable
         item.Status = DownloadStatus.Mengunduh;
         DownloadsView.Refresh();
         await SaveStateAsync(ct);
+    }
+
+    public async Task<int> StartQueuedAsync(CancellationToken ct = default)
+    {
+        var queued = Downloads
+            .Where(x => x.Status == DownloadStatus.Menunggu && string.IsNullOrWhiteSpace(x.Gid))
+            .OrderBy(x => x.CreatedAt)
+            .ToArray();
+
+        var started = 0;
+        foreach (var item in queued)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            try
+            {
+                await StartAsync(item, ct);
+                started++;
+            }
+            catch (Exception ex)
+            {
+                item.Status = DownloadStatus.Gagal;
+                item.ErrorMessage = ex.Message;
+            }
+        }
+
+        DownloadsView.Refresh();
+        await SaveStateAsync(ct);
+        return started;
+    }
+
+    public async Task<int?> TryRunScheduledQueueAsync(DateTimeOffset now, CancellationToken ct = default)
+    {
+        if (!_settings.SchedulerEnabled || !_settings.ScheduledQueueStartAt.HasValue)
+            return null;
+
+        if (now < _settings.ScheduledQueueStartAt.Value)
+            return null;
+
+        _settings.SchedulerEnabled = false;
+        _settings.ScheduledQueueStartAt = null;
+        await _settingsStore.SaveAsync(_settings, ct);
+
+        return await StartQueuedAsync(ct);
     }
 
     public async Task PauseAsync(DownloadItem item, CancellationToken ct = default)
