@@ -375,7 +375,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 
   try {
     let formatProfile = "";
-    if (info.menuItemId === "downloadaja-youtube-page") {
+    if (info.menuItemId === "downloadaja-youtube-page" || isYouTubeVideoUrl(url)) {
       const stored = await chrome.storage.local.get("youtubeQuality");
       formatProfile = normalizeYouTubeQuality(stored.youtubeQuality);
     }
