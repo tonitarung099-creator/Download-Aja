@@ -119,6 +119,33 @@ public partial class MainWindow : Window
         await RunItemActionAsync(() => _viewModel.RemoveAsync(item), "Menghapus dari daftar...");
     }
 
+    private async void Settings_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new SettingsWindow(
+            _viewModel.ConnectionsPerDownload,
+            _viewModel.SpeedLimitBytesPerSecond)
+        {
+            Owner = this
+        };
+
+        if (dialog.ShowDialog() != true)
+            return;
+
+        try
+        {
+            await _viewModel.UpdateSettingsAsync(
+                dialog.ConnectionsPerDownload,
+                dialog.SpeedLimitBytesPerSecond);
+
+            EngineStatusText.Text = $"Pengaturan disimpan — {dialog.ConnectionsPerDownload} koneksi/download";
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "Download Aja",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         => _viewModel.SetSearchText(SearchBox.Text);
 

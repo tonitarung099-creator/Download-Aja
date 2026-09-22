@@ -21,6 +21,7 @@ public sealed class Aria2RpcClient
         string directory,
         int connections = 8,
         string? outputFileName = null,
+        long speedLimitBytesPerSecond = 0,
         CancellationToken ct = default)
     {
         var safeConnections = Math.Clamp(connections, 1, 16);
@@ -38,6 +39,9 @@ public sealed class Aria2RpcClient
 
         if (!string.IsNullOrWhiteSpace(outputFileName))
             options["out"] = outputFileName;
+
+        if (speedLimitBytesPerSecond > 0)
+            options["max-download-limit"] = speedLimitBytesPerSecond.ToString();
 
         var result = await CallAsync("aria2.addUri", WithToken([new[] { url }, options]), ct);
         return result.GetString() ?? throw new InvalidOperationException("aria2 tidak mengembalikan GID.");

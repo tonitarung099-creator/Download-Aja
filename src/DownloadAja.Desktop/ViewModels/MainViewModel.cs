@@ -12,18 +12,24 @@ public sealed class MainViewModel : IAsyncDisposable
 {
     private readonly Aria2EngineHost _engine = new();
     private readonly DownloadHistoryStore _historyStore;
+    private readonly DownloadSettingsStore _settingsStore;
     private DateTimeOffset _lastAutoSave = DateTimeOffset.MinValue;
     private string _searchText = "";
     private string _filterKey = "Semua";
+    private DownloadSettings _settings = new();
 
     public ObservableCollection<DownloadItem> Downloads { get; } = new();
     public ICollectionView DownloadsView { get; }
     public string DownloadDirectory { get; } = GetDefaultDownloadDirectory();
 
+    public int ConnectionsPerDownload => _settings.ConnectionsPerDownload;
+    public long SpeedLimitBytesPerSecond => _settings.SpeedLimitBytesPerSecond;
+
     public MainViewModel()
     {
-        var statePath = Path.Combine(AppContext.BaseDirectory, "data", "downloads.json");
-        _historyStore = new DownloadHistoryStore(statePath);
+        var dataDirectory = Path.Combine(AppContext.BaseDirectory, "data");
+        _historyStore = new DownloadHistoryStore(Path.Combine(dataDirectory, "downloads.json"));
+        _settingsStore = new DownloadSettingsStore(Path.Combine(dataDirectory, "settings.json"));
 
         DownloadsView = CollectionViewSource.GetDefaultView(Downloads);
         DownloadsView.Filter = MatchesFilter;
@@ -32,6 +38,8 @@ public sealed class MainViewModel : IAsyncDisposable
     public async Task InitializeAsync(CancellationToken ct = default)
     {
         Directory.CreateDirectory(DownloadDirectory);
+
+        _settings = await _settingsStore.LoadAsync(ct);
 
         var restored = await _historyStore.LoadAsync(DownloadDirectory, ct);
         foreach (var item in restored)
@@ -51,6 +59,17 @@ public sealed class MainViewModel : IAsyncDisposable
     {
         _filterKey = string.IsNullOrWhiteSpace(filterKey) ? "Semua" : filterKey;
         DownloadsView.Refresh();
+    }
+
+    public async Task UpdateSettingsAsync(int connectionsPerDownload, long speedLimitBytesPerSecond, CancellationToken ct = default)
+    {
+        _settings = new DownloadSettings
+        {
+            ConnectionsPerDownload = connectionsPerDownload,
+            SpeedLimitBytesPerSecond = speedLimitBytesPerSecond
+        }.Normalize();
+
+        await _settingsStore.SaveAsync(_settings, ct);
     }
 
     public async Task<DownloadItem> AddAndStartAsync(string url, CancellationToken ct = default)
@@ -112,8 +131,9 @@ public sealed class MainViewModel : IAsyncDisposable
         item.Gid = await client.AddUriAsync(
             item.Url,
             directory,
-            connections: 8,
+            connections: _settings.ConnectionsPerDownload,
             outputFileName: existingFileName,
+            speedLimitBytesPerSecond: _settings.SpeedLimitBytesPerSecond,
             ct: ct);
 
         item.Status = DownloadStatus.Mengunduh;
