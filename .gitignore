@@ -1,0 +1,10 @@
+bin/
+obj/
+.vs/
+*.user
+*.suo
+artifacts/
+dist/
+tools/aria2/*.exe
+data/
+downloads/
