@@ -221,6 +221,45 @@ public partial class MainWindow : Window
         }
     }
 
+    private void Window_DragOver(object sender, DragEventArgs e)
+    {
+        e.Effects = e.Data.GetDataPresent(DataFormats.UnicodeText)
+            ? DragDropEffects.Copy
+            : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private async void Window_Drop(object sender, DragEventArgs e)
+    {
+        if (!e.Data.GetDataPresent(DataFormats.UnicodeText))
+            return;
+
+        var text = e.Data.GetData(DataFormats.UnicodeText) as string;
+        if (string.IsNullOrWhiteSpace(text))
+            return;
+
+        var urls = text
+            .Split(['\\r', '\\n', '\\t', ' '], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(value => Uri.TryCreate(value, UriKind.Absolute, out var uri) ? uri : null)
+            .Where(uri => uri is not null && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+            .Select(uri => uri!.AbsoluteUri)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(20)
+            .ToArray();
+
+        if (urls.Length == 0)
+        {
+            EngineStatusText.Text = "Drop tidak berisi URL HTTP/HTTPS";
+            return;
+        }
+
+        EngineStatusText.Text = $"Menambahkan {urls.Length} URL...";
+        foreach (var url in urls)
+            await EnqueueUrlAsync(url);
+
+        EngineStatusText.Text = $"{urls.Length} URL ditambahkan";
+    }
+
     private async void Settings_Click(object sender, RoutedEventArgs e)
     {
         var dialog = new SettingsWindow(
