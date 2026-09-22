@@ -19,6 +19,7 @@ public sealed class MainViewModel : IAsyncDisposable
     private string _searchText = "";
     private string _filterKey = "Semua";
     private DownloadSettings _settings = new();
+    private bool _queueAutoRun;
 
     public ObservableCollection<DownloadItem> Downloads { get; } = new();
     public ICollectionView DownloadsView { get; }
@@ -26,7 +27,9 @@ public sealed class MainViewModel : IAsyncDisposable
 
     public int ConnectionsPerDownload => _settings.ConnectionsPerDownload;
     public long SpeedLimitBytesPerSecond => _settings.SpeedLimitBytesPerSecond;
+    public int MaxSimultaneousDownloads => _settings.MaxSimultaneousDownloads;
     public bool ClipboardMonitoringEnabled => _settings.ClipboardMonitoringEnabled;
+    public bool QueueRunning => _queueAutoRun;
     public bool SchedulerEnabled => _settings.SchedulerEnabled;
     public DateTimeOffset? ScheduledQueueStartAt => _settings.ScheduledQueueStartAt;
     public int QueuedCount => Downloads.Count(x => x.Status == DownloadStatus.Menunggu && string.IsNullOrWhiteSpace(x.Gid));
@@ -70,11 +73,13 @@ public sealed class MainViewModel : IAsyncDisposable
     public async Task UpdateSettingsAsync(
         int connectionsPerDownload,
         long speedLimitBytesPerSecond,
+        int maxSimultaneousDownloads,
         bool clipboardMonitoringEnabled,
         CancellationToken ct = default)
     {
         _settings.ConnectionsPerDownload = connectionsPerDownload;
         _settings.SpeedLimitBytesPerSecond = speedLimitBytesPerSecond;
+        _settings.MaxSimultaneousDownloads = maxSimultaneousDownloads;
         _settings.ClipboardMonitoringEnabled = clipboardMonitoringEnabled;
         _settings.Normalize();
 
@@ -201,9 +206,32 @@ public sealed class MainViewModel : IAsyncDisposable
 
     public async Task<int> StartQueuedAsync(CancellationToken ct = default)
     {
+        _queueAutoRun = true;
+        var started = await FillQueueSlotsAsync(ct);
+
+        if (QueuedCount == 0 && ActiveCount == 0)
+            _queueAutoRun = false;
+
+        DownloadsView.Refresh();
+        await SaveStateAsync(ct);
+        return started;
+    }
+
+    public void StopQueue()
+    {
+        _queueAutoRun = false;
+    }
+
+    private async Task<int> FillQueueSlotsAsync(CancellationToken ct)
+    {
+        var availableSlots = Math.Max(0, _settings.MaxSimultaneousDownloads - ActiveCount);
+        if (availableSlots == 0)
+            return 0;
+
         var queued = Downloads
             .Where(x => x.Status == DownloadStatus.Menunggu && string.IsNullOrWhiteSpace(x.Gid))
             .OrderBy(x => x.CreatedAt)
+            .Take(availableSlots)
             .ToArray();
 
         var started = 0;
@@ -223,8 +251,9 @@ public sealed class MainViewModel : IAsyncDisposable
             }
         }
 
-        DownloadsView.Refresh();
-        await SaveStateAsync(ct);
+        if (QueuedCount == 0 && ActiveCount == 0)
+            _queueAutoRun = false;
+
         return started;
     }
 
@@ -379,6 +408,9 @@ public sealed class MainViewModel : IAsyncDisposable
             _ffmpegSessions.Remove(pair.Key);
             await session.DisposeAsync();
         }
+
+        if (_queueAutoRun)
+            await FillQueueSlotsAsync(ct);
 
         DownloadsView.Refresh();
 

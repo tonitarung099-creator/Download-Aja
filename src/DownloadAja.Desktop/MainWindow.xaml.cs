@@ -150,6 +150,13 @@ public partial class MainWindow : Window
         }
     }
 
+    private void StopQueue_Click(object sender, RoutedEventArgs e)
+    {
+        _viewModel.StopQueue();
+        EngineStatusText.Text = "Antrean dihentikan — download aktif tetap berjalan";
+        UpdateStatusBar();
+    }
+
     private async void Pause_Click(object sender, RoutedEventArgs e)
     {
         if (DownloadsGrid.SelectedItem is not DownloadItem item) return;
@@ -276,6 +283,7 @@ public partial class MainWindow : Window
         var dialog = new SettingsWindow(
             _viewModel.ConnectionsPerDownload,
             _viewModel.SpeedLimitBytesPerSecond,
+            _viewModel.MaxSimultaneousDownloads,
             _viewModel.ClipboardMonitoringEnabled)
         {
             Owner = this
@@ -289,6 +297,7 @@ public partial class MainWindow : Window
             await _viewModel.UpdateSettingsAsync(
                 dialog.ConnectionsPerDownload,
                 dialog.SpeedLimitBytesPerSecond,
+                dialog.MaxSimultaneousDownloads,
                 dialog.ClipboardMonitoringEnabled);
 
             EngineStatusText.Text = $"Pengaturan disimpan — {dialog.ConnectionsPerDownload} koneksi/download";
@@ -516,7 +525,9 @@ public partial class MainWindow : Window
     {
         SpeedStatusText.Text = $"Kecepatan: {FormatBytes(_viewModel.TotalSpeed)}/s";
         ActiveStatusText.Text = $"Aktif: {_viewModel.ActiveCount}";
-        QueueStatusText.Text = $"Antrean: {_viewModel.QueuedCount}";
+        QueueStatusText.Text = _viewModel.QueueRunning
+            ? $"Antrean: {_viewModel.QueuedCount} (jalan, maks {_viewModel.MaxSimultaneousDownloads})"
+            : $"Antrean: {_viewModel.QueuedCount}";
         SchedulerStatusText.Text = _viewModel.SchedulerEnabled && _viewModel.ScheduledQueueStartAt.HasValue
             ? $"Scheduler: {_viewModel.ScheduledQueueStartAt.Value.LocalDateTime:dd/MM HH:mm}"
             : "Scheduler: nonaktif";

@@ -22,6 +22,7 @@
                     <Button Click="AddUrl_Click" FontWeight="SemiBold">＋ Tambah URL</Button>
                     <Button Click="Start_Click">▶ Mulai/Lanjut</Button>
                     <Button Click="StartQueue_Click">▶▶ Mulai Antrean</Button>
+                    <Button Click="StopQueue_Click">⏹ Antrean</Button>
                     <Button Click="Pause_Click">⏸ Jeda</Button>
                     <Button Click="Stop_Click">■ Hentikan</Button>
                     <Button Click="Delete_Click">🗑 Hapus</Button>

@@ -7,30 +7,24 @@ public partial class SettingsWindow : Window
 {
     public int ConnectionsPerDownload { get; private set; }
     public long SpeedLimitBytesPerSecond { get; private set; }
+    public int MaxSimultaneousDownloads { get; private set; }
     public bool ClipboardMonitoringEnabled { get; private set; }
 
     public SettingsWindow(
         int connectionsPerDownload,
         long speedLimitBytesPerSecond,
+        int maxSimultaneousDownloads,
         bool clipboardMonitoringEnabled)
     {
         InitializeComponent();
 
         ConnectionsPerDownload = Math.Clamp(connectionsPerDownload, 1, 16);
         SpeedLimitBytesPerSecond = Math.Max(0, speedLimitBytesPerSecond);
+        MaxSimultaneousDownloads = Math.Clamp(maxSimultaneousDownloads, 1, 20);
         ClipboardMonitoringEnabled = clipboardMonitoringEnabled;
 
-        foreach (ComboBoxItem item in ConnectionsBox.Items)
-        {
-            if (int.TryParse(item.Tag?.ToString(), out var value) && value == ConnectionsPerDownload)
-            {
-                ConnectionsBox.SelectedItem = item;
-                break;
-            }
-        }
-
-        if (ConnectionsBox.SelectedIndex < 0)
-            ConnectionsBox.SelectedIndex = 3;
+        SelectComboValue(ConnectionsBox, ConnectionsPerDownload, fallbackIndex: 3);
+        SelectComboValue(SimultaneousBox, MaxSimultaneousDownloads, fallbackIndex: 2);
 
         SpeedLimitBox.Text = (SpeedLimitBytesPerSecond / 1024L).ToString();
         ClipboardMonitoringBox.IsChecked = ClipboardMonitoringEnabled;
@@ -38,10 +32,15 @@ public partial class SettingsWindow : Window
 
     private void Save_Click(object sender, RoutedEventArgs e)
     {
-        if (ConnectionsBox.SelectedItem is not ComboBoxItem selected ||
-            !int.TryParse(selected.Tag?.ToString(), out var connections))
+        if (!TryReadComboValue(ConnectionsBox, out var connections))
         {
             ValidationText.Text = "Pilih jumlah koneksi.";
+            return;
+        }
+
+        if (!TryReadComboValue(SimultaneousBox, out var simultaneous))
+        {
+            ValidationText.Text = "Pilih jumlah download simultan.";
             return;
         }
 
@@ -54,6 +53,7 @@ public partial class SettingsWindow : Window
         try
         {
             ConnectionsPerDownload = Math.Clamp(connections, 1, 16);
+            MaxSimultaneousDownloads = Math.Clamp(simultaneous, 1, 20);
             SpeedLimitBytesPerSecond = checked(speedKb * 1024L);
             ClipboardMonitoringEnabled = ClipboardMonitoringBox.IsChecked == true;
             DialogResult = true;
@@ -62,5 +62,26 @@ public partial class SettingsWindow : Window
         {
             ValidationText.Text = "Batas kecepatan terlalu besar.";
         }
+    }
+
+    private static bool TryReadComboValue(ComboBox combo, out int value)
+    {
+        value = 0;
+        return combo.SelectedItem is ComboBoxItem selected
+            && int.TryParse(selected.Tag?.ToString(), out value);
+    }
+
+    private static void SelectComboValue(ComboBox combo, int value, int fallbackIndex)
+    {
+        foreach (ComboBoxItem item in combo.Items)
+        {
+            if (int.TryParse(item.Tag?.ToString(), out var candidate) && candidate == value)
+            {
+                combo.SelectedItem = item;
+                return;
+            }
+        }
+
+        combo.SelectedIndex = fallbackIndex;
     }
 }

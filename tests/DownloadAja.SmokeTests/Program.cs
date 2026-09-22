@@ -19,12 +19,14 @@ var settings = new DownloadSettings
 {
     ConnectionsPerDownload = 99,
     SpeedLimitBytesPerSecond = -1,
+    MaxSimultaneousDownloads = 99,
     SchedulerEnabled = false,
     ScheduledQueueStartAt = DateTimeOffset.Now.AddHours(1)
 }.Normalize();
 
 Check(settings.ConnectionsPerDownload == 16, "Koneksi harus dibatasi maksimum 16.");
 Check(settings.SpeedLimitBytesPerSecond == 0, "Speed limit negatif harus menjadi 0.");
+Check(settings.MaxSimultaneousDownloads == 20, "Download simultan harus dibatasi maksimum 20.");
 Check(settings.ScheduledQueueStartAt is null, "Jadwal harus dibersihkan saat scheduler nonaktif.");
 
 var tempDirectory = Path.Combine(Path.GetTempPath(), "DownloadAjaSmoke", Guid.NewGuid().ToString("N"));

@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Pengaturan Download Aja"
-        Width="540" Height="400"
+        Width="560" Height="450"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner">
     <Grid Margin="22">
@@ -21,10 +21,11 @@
 
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="230"/>
+                <ColumnDefinition Width="240"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
@@ -38,11 +39,23 @@
                 <ComboBoxItem Content="16 koneksi" Tag="16"/>
             </ComboBox>
 
-            <StackPanel Grid.Row="1" Margin="0,18,0,0">
+            <TextBlock Grid.Row="1" Margin="0,18,0,0" VerticalAlignment="Center"
+                       Text="Download simultan saat antrean"/>
+            <ComboBox x:Name="SimultaneousBox" Grid.Row="1" Grid.Column="1" Margin="0,18,0,0" Height="32" SelectedValuePath="Tag">
+                <ComboBoxItem Content="1 download" Tag="1"/>
+                <ComboBoxItem Content="2 download" Tag="2"/>
+                <ComboBoxItem Content="3 download" Tag="3"/>
+                <ComboBoxItem Content="4 download" Tag="4"/>
+                <ComboBoxItem Content="5 download" Tag="5"/>
+                <ComboBoxItem Content="8 download" Tag="8"/>
+                <ComboBoxItem Content="10 download" Tag="10"/>
+            </ComboBox>
+
+            <StackPanel Grid.Row="2" Margin="0,18,0,0">
                 <TextBlock Text="Batas kecepatan"/>
                 <TextBlock Text="0 = tanpa batas" Foreground="#64748B" FontSize="11" Margin="0,3,0,0"/>
             </StackPanel>
-            <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,18,0,0">
+            <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="0,18,0,0">
                 <TextBox x:Name="SpeedLimitBox" Width="130" Height="32" VerticalContentAlignment="Center" Padding="8,0"/>
                 <TextBlock Text="KB/s" VerticalAlignment="Center" Margin="8,0,0,0"/>
             </StackPanel>
