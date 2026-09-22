@@ -428,6 +428,13 @@ public sealed class MainViewModel : IAsyncDisposable
         try
         {
             File.Delete(filePath);
+
+            if (item.EngineKind == DownloadEngineKind.Aria2)
+            {
+                var ariaControl = filePath + ".aria2";
+                if (File.Exists(ariaControl))
+                    File.Delete(ariaControl);
+            }
         }
         catch (Exception ex)
         {
