@@ -44,7 +44,16 @@ public sealed class DownloadItem : INotifyPropertyChanged
     public string? FilePath { get => _filePath; set => Set(ref _filePath, value); }
     public string? Gid { get => _gid; set => Set(ref _gid, value); }
     public string? ErrorMessage { get => _errorMessage; set => Set(ref _errorMessage, value); }
-    public string YouTubeFormatProfile { get => _youtubeFormatProfile; set => Set(ref _youtubeFormatProfile, value); }
+
+    public string YouTubeFormatProfile
+    {
+        get => _youtubeFormatProfile;
+        set
+        {
+            if (!Set(ref _youtubeFormatProfile, value)) return;
+            OnPropertyChanged(nameof(QualityText));
+        }
+    }
 
     public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.Now;
 
@@ -88,12 +97,27 @@ public sealed class DownloadItem : INotifyPropertyChanged
         {
             if (!Set(ref _engineKind, value)) return;
             OnPropertyChanged(nameof(Category));
+            OnPropertyChanged(nameof(QualityText));
         }
     }
 
     public string Category => EngineKind == DownloadEngineKind.YtDlp
         ? "Video"
         : ClassifyCategory(Name, Url);
+
+    public string QualityText => EngineKind != DownloadEngineKind.YtDlp
+        ? "—"
+        : YouTubeFormatProfile?.Trim().ToLowerInvariant() switch
+        {
+            "2160p" => "2160p",
+            "1440p" => "1440p",
+            "1080p" => "1080p",
+            "720p" => "720p",
+            "480p" => "480p",
+            "360p" => "360p",
+            _ => "Best"
+        };
+
     public double ProgressPercent => TotalBytes <= 0 ? 0 : Math.Clamp(CompletedBytes * 100d / TotalBytes, 0, 100);
     public string ProgressText => $"{ProgressPercent:F0}%";
     public string SizeText => TotalBytes <= 0 ? "—" : $"{FormatBytes(CompletedBytes)} / {FormatBytes(TotalBytes)}";

@@ -151,8 +151,9 @@
                     </DataGrid.ContextMenu>
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Nama" Binding="{Binding Name}" Width="2*"/>
-                        <DataGridTextColumn Header="Kategori" Binding="{Binding Category}" Width="90"/>
-                        <DataGridTextColumn Header="Ukuran" Binding="{Binding SizeText}" Width="155"/>
+                        <DataGridTextColumn Header="Kategori" Binding="{Binding Category}" Width="85"/>
+                        <DataGridTextColumn Header="Kualitas" Binding="{Binding QualityText}" Width="78"/>
+                        <DataGridTextColumn Header="Ukuran" Binding="{Binding SizeText}" Width="145"/>
                         <DataGridTemplateColumn Header="Progres" Width="130">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>

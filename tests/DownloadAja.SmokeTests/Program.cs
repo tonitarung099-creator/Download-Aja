@@ -16,6 +16,10 @@ Check(new DownloadItem { Name = "setup.exe" }.Category == "Program", "Kategori E
 Check(new DownloadItem { Name = "backup.7z" }.Category == "Arsip", "Kategori 7Z harus Arsip.");
 Check(new DownloadItem { Name = "YouTube video", EngineKind = DownloadEngineKind.YtDlp }.Category == "Video",
     "Engine yt-dlp harus dikategorikan sebagai Video.");
+Check(new DownloadItem { EngineKind = DownloadEngineKind.YtDlp, YouTubeFormatProfile = "1080p" }.QualityText == "1080p",
+    "Kolom kualitas YouTube harus menampilkan profil yang dipilih.");
+Check(new DownloadItem { EngineKind = DownloadEngineKind.Aria2 }.QualityText == "—",
+    "Download non-YouTube tidak boleh menampilkan profil kualitas YouTube.");
 
 Check(YouTubeUrlClassifier.IsVideoUrl("https://www.youtube.com/watch?v=abc123"), "URL watch YouTube harus dikenali sebagai video.");
 Check(YouTubeUrlClassifier.IsVideoUrl("https://youtu.be/abc123"), "URL youtu.be harus dikenali sebagai video.");
