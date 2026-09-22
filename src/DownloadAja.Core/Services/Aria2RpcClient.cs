@@ -34,7 +34,11 @@ public sealed class Aria2RpcClient
             ["min-split-size"] = "1M",
             ["file-allocation"] = "none",
             ["auto-file-renaming"] = "false",
-            ["allow-overwrite"] = "false"
+            ["allow-overwrite"] = "false",
+            ["max-tries"] = "5",
+            ["retry-wait"] = "3",
+            ["connect-timeout"] = "30",
+            ["timeout"] = "60"
         };
 
         if (!string.IsNullOrWhiteSpace(outputFileName))
