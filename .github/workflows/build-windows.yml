@@ -264,6 +264,107 @@ jobs:
             }
           }
 
+      - name: Smoke test yt-dlp stop and resume
+        shell: pwsh
+        run: |
+          $yt = (Resolve-Path "artifacts/Download-Aja/tools/yt-dlp/yt-dlp.exe").Path
+          $deno = (Resolve-Path "artifacts/Download-Aja/tools/deno/deno.exe").Path
+          $root = Join-Path $env:RUNNER_TEMP "downloadaja-ytdlp-resume"
+          $out = Join-Path $root "output"
+          $cache = Join-Path $root "yt-cache"
+          $denoCache = Join-Path $root "deno-cache"
+          $source = Join-Path $root "sample.mp4"
+          $rangeLog = Join-Path $root "ranges.log"
+          New-Item -ItemType Directory -Force -Path $root, $out, $cache, $denoCache | Out-Null
+
+          $stream = [IO.File]::Open($source, [IO.FileMode]::Create, [IO.FileAccess]::Write, [IO.FileShare]::None)
+          try {
+            $stream.SetLength(32MB)
+          }
+          finally {
+            $stream.Dispose()
+          }
+
+          $server = Start-Process python -ArgumentList "tests/range_http_server.py","--file",$source,"--port","18767","--log",$rangeLog,"--delay-ms","15" -PassThru -WindowStyle Hidden
+          $previousDenoDir = $env:DENO_DIR
+          $env:DENO_DIR = $denoCache
+
+          try {
+            Start-Sleep -Seconds 2
+
+            $ytArgs = @(
+              "--ignore-config",
+              "--no-plugin-dirs",
+              "--no-cookies-from-browser",
+              "--cache-dir", $cache,
+              "--no-update",
+              "--no-remote-components",
+              "--continue",
+              "--no-playlist",
+              "--windows-filenames",
+              "--js-runtimes", "deno:$deno",
+              "--paths", $out,
+              "--output", "resume.%(ext)s",
+              "http://127.0.0.1:18767/sample.mp4"
+            )
+
+            $psi = [Diagnostics.ProcessStartInfo]::new()
+            $psi.FileName = $yt
+            $psi.UseShellExecute = $false
+            $psi.CreateNoWindow = $true
+            foreach ($arg in $ytArgs) {
+              [void]$psi.ArgumentList.Add([string]$arg)
+            }
+            $psi.Environment["DENO_DIR"] = $denoCache
+
+            $first = [Diagnostics.Process]::Start($psi)
+            Start-Sleep -Seconds 2
+
+            if ($first.HasExited) {
+              throw "Download yt-dlp pertama selesai terlalu cepat untuk menguji resume."
+            }
+
+            $first.Kill($true)
+            $first.WaitForExit()
+
+            $part = Get-ChildItem -Path $out -Filter "*.part" -File | Select-Object -First 1
+            if (-not $part) {
+              throw "File .part yt-dlp tidak ditemukan setelah proses dihentikan."
+            }
+
+            $sourceLength = (Get-Item $source).Length
+            if ($part.Length -le 0 -or $part.Length -ge $sourceLength) {
+              throw "Ukuran file .part tidak valid untuk test resume: $($part.Length)."
+            }
+
+            & $yt @ytArgs
+            if ($LASTEXITCODE -ne 0) {
+              throw "yt-dlp gagal melanjutkan file .part."
+            }
+
+            $result = Get-ChildItem -Path $out -File | Where-Object { $_.Name -notlike "*.part" } | Select-Object -First 1
+            if (-not $result) {
+              throw "File final yt-dlp tidak ditemukan setelah resume."
+            }
+
+            $sourceHash = (Get-FileHash $source -Algorithm SHA256).Hash
+            $resultHash = (Get-FileHash $result.FullName -Algorithm SHA256).Hash
+            if ($sourceHash -ne $resultHash) {
+              throw "Hash file hasil resume yt-dlp tidak cocok."
+            }
+
+            $positiveRange = Select-String -Path $rangeLog -Pattern "RANGE bytes=([1-9][0-9]*)-" | Select-Object -First 1
+            if (-not $positiveRange) {
+              throw "Server tidak melihat Range request dengan offset > 0 saat resume."
+            }
+          }
+          finally {
+            $env:DENO_DIR = $previousDenoDir
+            if ($server -and -not $server.HasExited) {
+              Stop-Process -Id $server.Id -Force
+            }
+          }
+
       - name: Copy Chrome extension and tools
         shell: pwsh
         run: |
