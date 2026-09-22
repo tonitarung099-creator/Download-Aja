@@ -84,6 +84,22 @@ jobs:
           & artifacts/Download-Aja/tools/ffmpeg/ffmpeg.exe -version
           if ($LASTEXITCODE -ne 0) { throw "ffmpeg.exe gagal dijalankan." }
 
+      - name: Smoke test FFmpeg HLS remux
+        shell: pwsh
+        run: |
+          $ffmpeg = "artifacts/Download-Aja/tools/ffmpeg/ffmpeg.exe"
+          $smoke = Join-Path $env:RUNNER_TEMP "downloadaja-hls-smoke"
+          New-Item -ItemType Directory -Force -Path $smoke | Out-Null
+
+          & $ffmpeg -hide_banner -loglevel error -f lavfi -i "sine=frequency=1000:sample_rate=44100" -t 2 -c:a aac -f hls -hls_time 1 -hls_list_size 0 (Join-Path $smoke "master.m3u8")
+          if ($LASTEXITCODE -ne 0) { throw "FFmpeg gagal membuat stream HLS uji." }
+
+          & $ffmpeg -hide_banner -loglevel error -i (Join-Path $smoke "master.m3u8") -c copy -f matroska (Join-Path $smoke "result.mkv")
+          if ($LASTEXITCODE -ne 0) { throw "FFmpeg gagal membaca/remux HLS uji." }
+
+          $result = Get-Item (Join-Path $smoke "result.mkv")
+          if ($result.Length -le 0) { throw "Hasil remux HLS kosong." }
+
       - name: Copy Chrome extension and tools
         shell: pwsh
         run: |
