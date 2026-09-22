@@ -27,7 +27,7 @@ public sealed class Aria2RpcClient
             ["max-connection-per-server"] = safeConnections.ToString(),
             ["min-split-size"] = "1M",
             ["file-allocation"] = "none",
-            ["auto-file-renaming"] = "true",
+            ["auto-file-renaming"] = "false",
             ["allow-overwrite"] = "false"
         };
 
