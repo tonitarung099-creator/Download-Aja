@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace DownloadAja.Desktop;
 
@@ -14,13 +15,16 @@ public partial class BrowserIntegrationWindow : Window
         RefreshStatus();
     }
 
-    private void OpenChromeExtensions_Click(object sender, RoutedEventArgs e)
+    private void OpenBrowserExtensions_Click(object sender, RoutedEventArgs e)
     {
-        var chrome = BrowserIntegrationService.FindChromeExecutable();
-        if (chrome is null)
+        var browser = GetSelectedBrowser();
+        var executable = BrowserIntegrationService.FindBrowserExecutable(browser);
+        var displayName = BrowserIntegrationService.GetBrowserDisplayName(browser);
+
+        if (executable is null)
         {
             MessageBox.Show(this,
-                "Google Chrome tidak ditemukan di lokasi standar Windows.",
+                $"{displayName} tidak ditemukan di lokasi standar Windows.",
                 "Download Aja",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
@@ -29,7 +33,7 @@ public partial class BrowserIntegrationWindow : Window
 
         Process.Start(new ProcessStartInfo
         {
-            FileName = chrome,
+            FileName = executable,
             Arguments = "chrome://extensions/",
             UseShellExecute = true
         });
@@ -65,8 +69,8 @@ public partial class BrowserIntegrationWindow : Window
     {
         try
         {
-            BrowserIntegrationService.RegisterChrome(ExtensionIdBox.Text);
-            StatusText.Text = "✓ Integrasi Chrome terdaftar. Jika Chrome sedang terbuka, restart Chrome lalu coba menu “Download dengan Download Aja”.";
+            BrowserIntegrationService.RegisterChromiumBrowsers(ExtensionIdBox.Text);
+            StatusText.Text = "✓ Native Messaging didaftarkan untuk Chrome, Edge, dan Chromium fallback. Restart browser yang sedang terbuka lalu coba extension.";
         }
         catch (Exception ex)
         {
@@ -78,7 +82,7 @@ public partial class BrowserIntegrationWindow : Window
     {
         try
         {
-            BrowserIntegrationService.UnregisterChrome();
+            BrowserIntegrationService.UnregisterChromiumBrowsers();
             RefreshStatus();
         }
         catch (Exception ex)
@@ -87,11 +91,25 @@ public partial class BrowserIntegrationWindow : Window
         }
     }
 
+    private ChromiumBrowserKind GetSelectedBrowser()
+    {
+        if (BrowserBox.SelectedItem is ComboBoxItem selected &&
+            Enum.TryParse<ChromiumBrowserKind>(selected.Tag?.ToString(), out var browser))
+            return browser;
+
+        return ChromiumBrowserKind.Chrome;
+    }
+
     private void RefreshStatus()
     {
         var extensionId = BrowserIntegrationService.GetRegisteredExtensionId();
-        StatusText.Text = BrowserIntegrationService.IsChromeRegistered()
-            ? $"✓ Native Messaging Chrome terdaftar{(string.IsNullOrWhiteSpace(extensionId) ? "." : $" untuk extension {extensionId}.")}"
-            : "Integrasi Native Messaging Chrome belum terdaftar.";
+        var status = BrowserIntegrationService.GetRegistrationStatus();
+
+        var details = string.Join(" • ", status.Select(pair =>
+            $"{pair.Key}: {(pair.Value ? "terdaftar" : "belum")}"));
+
+        StatusText.Text = BrowserIntegrationService.IsAnyChromiumBrowserRegistered()
+            ? $"✓ Integrasi aktif{(string.IsNullOrWhiteSpace(extensionId) ? "." : $" untuk extension {extensionId}.")}\n{details}"
+            : $"Integrasi Native Messaging belum terdaftar.\n{details}";
     }
 }

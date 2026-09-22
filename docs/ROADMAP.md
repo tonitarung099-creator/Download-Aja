@@ -38,7 +38,7 @@
 - [x] Deteksi media langsung non-DRM di halaman
 - [x] HLS/DASH non-DRM melalui FFmpeg
 - [ ] Pause/resume khusus stream FFmpeg
-- [ ] Dukungan browser Chromium lain (Edge/Brave/Vivaldi) dari wizard yang sama
+- [x] Dukungan wizard Chrome/Edge/Brave/Vivaldi dengan registry Chromium fallback
 - [x] Pengecualian interception per domain
 - [ ] Aturan situs lanjutan (per-domain cookie/media behavior)
 

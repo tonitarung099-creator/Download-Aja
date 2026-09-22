@@ -4,9 +4,24 @@ using Microsoft.Win32;
 
 namespace DownloadAja.Desktop;
 
+public enum ChromiumBrowserKind
+{
+    Chrome,
+    Edge,
+    Brave,
+    Vivaldi
+}
+
 public static class BrowserIntegrationService
 {
     public const string HostName = "com.downloadaja.bridge";
+
+    private static readonly string[] NativeMessagingRegistryRoots =
+    [
+        @"Software\Google\Chrome\NativeMessagingHosts",
+        @"Software\Microsoft\Edge\NativeMessagingHosts",
+        @"Software\Chromium\NativeMessagingHosts"
+    ];
 
     public static string ExtensionDirectory =>
         Path.Combine(AppContext.BaseDirectory, "browser-extension", "chrome");
@@ -17,7 +32,7 @@ public static class BrowserIntegrationService
     public static string HostManifestPath =>
         Path.Combine(AppContext.BaseDirectory, "data", HostName + ".json");
 
-    public static void RegisterChrome(string extensionId)
+    public static void RegisterChromiumBrowsers(string extensionId)
     {
         extensionId = ValidateExtensionId(extensionId);
 
@@ -32,7 +47,7 @@ public static class BrowserIntegrationService
         var manifest = new
         {
             name = HostName,
-            description = "Download Aja Chrome Native Messaging Bridge",
+            description = "Download Aja Chromium Native Messaging Bridge",
             path = Path.GetFullPath(BridgePath),
             type = "stdio",
             allowed_origins = new[] { $"chrome-extension://{extensionId}/" }
@@ -42,21 +57,28 @@ public static class BrowserIntegrationService
             HostManifestPath,
             JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true }));
 
-        using var key = Registry.CurrentUser.CreateSubKey(
-            $@"Software\Google\Chrome\NativeMessagingHosts\{HostName}",
-            writable: true);
+        var manifestPath = Path.GetFullPath(HostManifestPath);
+        foreach (var root in NativeMessagingRegistryRoots)
+        {
+            using var key = Registry.CurrentUser.CreateSubKey(
+                $@"{root}\{HostName}",
+                writable: true);
 
-        if (key is null)
-            throw new InvalidOperationException("Tidak dapat membuat registry Native Messaging untuk Chrome.");
+            if (key is null)
+                throw new InvalidOperationException($"Tidak dapat membuat registry Native Messaging: {root}");
 
-        key.SetValue("", Path.GetFullPath(HostManifestPath), RegistryValueKind.String);
+            key.SetValue("", manifestPath, RegistryValueKind.String);
+        }
     }
 
-    public static void UnregisterChrome()
+    public static void UnregisterChromiumBrowsers()
     {
-        Registry.CurrentUser.DeleteSubKeyTree(
-            $@"Software\Google\Chrome\NativeMessagingHosts\{HostName}",
-            throwOnMissingSubKey: false);
+        foreach (var root in NativeMessagingRegistryRoots)
+        {
+            Registry.CurrentUser.DeleteSubKeyTree(
+                $@"{root}\{HostName}",
+                throwOnMissingSubKey: false);
+        }
 
         try
         {
@@ -97,34 +119,74 @@ public static class BrowserIntegrationService
         }
     }
 
-    public static bool IsChromeRegistered()
-    {
-        using var key = Registry.CurrentUser.OpenSubKey(
-            $@"Software\Google\Chrome\NativeMessagingHosts\{HostName}");
+    public static bool IsAnyChromiumBrowserRegistered()
+        => NativeMessagingRegistryRoots.Any(IsRegisteredAtRoot)
+            && File.Exists(BridgePath)
+            && File.Exists(HostManifestPath);
 
-        var value = key?.GetValue("") as string;
-        return !string.IsNullOrWhiteSpace(value)
-            && File.Exists(value)
-            && File.Exists(BridgePath);
-    }
+    public static IReadOnlyDictionary<string, bool> GetRegistrationStatus()
+        => new Dictionary<string, bool>
+        {
+            ["Chrome"] = IsRegisteredAtRoot(NativeMessagingRegistryRoots[0]),
+            ["Edge"] = IsRegisteredAtRoot(NativeMessagingRegistryRoots[1]),
+            ["Chromium fallback"] = IsRegisteredAtRoot(NativeMessagingRegistryRoots[2])
+        };
 
-    public static string? FindChromeExecutable()
+    public static string? FindBrowserExecutable(ChromiumBrowserKind browser)
     {
-        string?[] candidates =
-        [
-            Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "Google", "Chrome", "Application", "chrome.exe"),
-            Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
-                "Google", "Chrome", "Application", "chrome.exe"),
-            Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
-                "Google", "Chrome", "Application", "chrome.exe")
-        ];
+        var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+        var programFilesX86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+
+        string?[] candidates = browser switch
+        {
+            ChromiumBrowserKind.Chrome =>
+            [
+                Path.Combine(local, "Google", "Chrome", "Application", "chrome.exe"),
+                Path.Combine(programFiles, "Google", "Chrome", "Application", "chrome.exe"),
+                Path.Combine(programFilesX86, "Google", "Chrome", "Application", "chrome.exe")
+            ],
+            ChromiumBrowserKind.Edge =>
+            [
+                Path.Combine(programFilesX86, "Microsoft", "Edge", "Application", "msedge.exe"),
+                Path.Combine(programFiles, "Microsoft", "Edge", "Application", "msedge.exe"),
+                Path.Combine(local, "Microsoft", "Edge", "Application", "msedge.exe")
+            ],
+            ChromiumBrowserKind.Brave =>
+            [
+                Path.Combine(local, "BraveSoftware", "Brave-Browser", "Application", "brave.exe"),
+                Path.Combine(programFiles, "BraveSoftware", "Brave-Browser", "Application", "brave.exe"),
+                Path.Combine(programFilesX86, "BraveSoftware", "Brave-Browser", "Application", "brave.exe")
+            ],
+            ChromiumBrowserKind.Vivaldi =>
+            [
+                Path.Combine(local, "Vivaldi", "Application", "vivaldi.exe"),
+                Path.Combine(programFiles, "Vivaldi", "Application", "vivaldi.exe"),
+                Path.Combine(programFilesX86, "Vivaldi", "Application", "vivaldi.exe")
+            ],
+            _ => []
+        };
 
         return candidates.FirstOrDefault(path =>
             !string.IsNullOrWhiteSpace(path) && File.Exists(path));
+    }
+
+    public static string GetBrowserDisplayName(ChromiumBrowserKind browser)
+        => browser switch
+        {
+            ChromiumBrowserKind.Chrome => "Google Chrome",
+            ChromiumBrowserKind.Edge => "Microsoft Edge",
+            ChromiumBrowserKind.Brave => "Brave",
+            ChromiumBrowserKind.Vivaldi => "Vivaldi",
+            _ => browser.ToString()
+        };
+
+    private static bool IsRegisteredAtRoot(string root)
+    {
+        using var key = Registry.CurrentUser.OpenSubKey($@"{root}\{HostName}");
+        var value = key?.GetValue("") as string;
+        return !string.IsNullOrWhiteSpace(value)
+            && File.Exists(value);
     }
 
     private static string ValidateExtensionId(string extensionId)
@@ -133,7 +195,7 @@ public static class BrowserIntegrationService
 
         if (value.Length != 32 || value.Any(ch => ch < 'a' || ch > 'p'))
             throw new ArgumentException(
-                "ID extension Chrome harus 32 karakter (huruf a sampai p). Salin ID dari chrome://extensions.");
+                "ID extension harus 32 karakter (huruf a sampai p). Salin ID dari halaman extensions browser.");
 
         return value;
     }

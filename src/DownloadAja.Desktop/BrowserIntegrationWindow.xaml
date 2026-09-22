@@ -1,12 +1,13 @@
 <Window x:Class="DownloadAja.Desktop.BrowserIntegrationWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Integrasi Chrome - Download Aja"
-        Width="700" Height="520"
-        MinWidth="660" MinHeight="480"
+        Title="Integrasi Browser - Download Aja"
+        Width="720" Height="610"
+        MinWidth="680" MinHeight="560"
         WindowStartupLocation="CenterOwner">
     <Grid Margin="22">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -16,22 +17,33 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Text="Integrasi Google Chrome"
+        <TextBlock Text="Integrasi Browser Chromium"
                    FontSize="23" FontWeight="SemiBold" Foreground="#0F172A"/>
         <TextBlock Grid.Row="1" Margin="0,6,0,18" Foreground="#64748B" TextWrapping="Wrap"
-                   Text="Pasang extension dari folder portable, lalu daftarkan ID extension agar Chrome dapat mengirim download ke aplikasi."/>
+                   Text="Extension yang sama dapat dipakai di Chrome, Edge, Brave, dan Vivaldi. Pilih browser untuk membuka halaman extension-nya."/>
 
         <Border Grid.Row="2" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="10" Padding="14">
             <StackPanel>
-                <TextBlock Text="1. Muat extension" FontWeight="SemiBold" FontSize="15"/>
-                <TextBlock Margin="0,6,0,10" Foreground="#475569" TextWrapping="Wrap"
-                           Text="Buka chrome://extensions → aktifkan Mode developer → klik “Muat yang belum dikemas / Load unpacked” → pilih folder extension di bawah."/>
+                <TextBlock Text="1. Pilih browser dan muat extension" FontWeight="SemiBold" FontSize="15"/>
+                <Grid Margin="0,10,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="220"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <ComboBox x:Name="BrowserBox" Height="32" SelectedIndex="0">
+                        <ComboBoxItem Tag="Chrome">Google Chrome</ComboBoxItem>
+                        <ComboBoxItem Tag="Edge">Microsoft Edge</ComboBoxItem>
+                        <ComboBoxItem Tag="Brave">Brave</ComboBoxItem>
+                        <ComboBoxItem Tag="Vivaldi">Vivaldi</ComboBoxItem>
+                    </ComboBox>
+                    <Button Grid.Column="1" Margin="10,0,0,0" Click="OpenBrowserExtensions_Click">Buka Extensions</Button>
+                    <Button Grid.Column="2" Margin="8,0,0,0" Click="OpenExtensionFolder_Click">Buka Folder</Button>
+                </Grid>
+                <TextBlock Margin="0,10,0,6" Foreground="#475569" TextWrapping="Wrap"
+                           Text="Aktifkan Mode developer → Load unpacked / Muat yang belum dikemas → pilih folder berikut:"/>
                 <TextBox x:Name="ExtensionPathBox" IsReadOnly="True" Height="32" VerticalContentAlignment="Center" Padding="8,0"/>
-                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                    <Button Click="OpenChromeExtensions_Click">Buka chrome://extensions</Button>
-                    <Button Click="OpenExtensionFolder_Click">Buka Folder Extension</Button>
-                    <Button Click="CopyExtensionPath_Click">Salin Path</Button>
-                </StackPanel>
+                <Button HorizontalAlignment="Left" Margin="0,8,0,0" Click="CopyExtensionPath_Click">Salin Path Extension</Button>
             </StackPanel>
         </Border>
 
@@ -43,14 +55,14 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel>
                     <TextBlock Text="2. Masukkan ID extension" FontWeight="SemiBold" FontSize="15"/>
-                    <TextBlock Margin="0,4,0,8" Foreground="#64748B"
-                               Text="Salin ID 32 karakter yang tampil pada kartu extension Download Aja."/>
-                    <TextBox x:Name="ExtensionIdBox" Width="420" HorizontalAlignment="Left"
+                    <TextBlock Margin="0,4,0,8" Foreground="#64748B" TextWrapping="Wrap"
+                               Text="Salin ID 32 karakter dari kartu extension Download Aja pada browser. ID yang sama biasanya dipakai untuk folder extension yang sama."/>
+                    <TextBox x:Name="ExtensionIdBox" Width="430" HorizontalAlignment="Left"
                              Height="32" MaxLength="32" VerticalContentAlignment="Center" Padding="8,0"/>
                 </StackPanel>
                 <Button Grid.Column="1" VerticalAlignment="Bottom" Margin="14,0,0,0"
                         Click="Register_Click" FontWeight="SemiBold">
-                    Daftarkan Integrasi
+                    Daftarkan Semua Chromium
                 </Button>
             </Grid>
         </Border>
@@ -59,11 +71,19 @@
             <TextBlock x:Name="StatusText" TextWrapping="Wrap"/>
         </Border>
 
-        <TextBlock Grid.Row="5" Margin="0,14,0,0" Foreground="#64748B" TextWrapping="Wrap"
-                   Text="Pendaftaran memakai registry pengguna (HKCU), sehingga tidak membutuhkan hak Administrator. Setelah mendaftar, tutup dan buka kembali Chrome jika koneksi belum langsung aktif."/>
+        <Border Grid.Row="5" Margin="0,12,0,0" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="12">
+            <StackPanel>
+                <TextBlock FontWeight="SemiBold" Text="Catatan kompatibilitas"/>
+                <TextBlock Margin="0,5,0,0" Foreground="#64748B" TextWrapping="Wrap"
+                           Text="Chrome didaftarkan pada registry Google Chrome, Edge pada registry Microsoft Edge, dan juga registry Chromium sebagai fallback untuk browser Chromium lain. Jika Brave/Vivaldi belum terhubung, restart browser setelah pendaftaran."/>
+            </StackPanel>
+        </Border>
 
-        <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Click="Unregister_Click">Hapus Integrasi</Button>
+        <TextBlock Grid.Row="6" Margin="0,14,0,0" Foreground="#64748B" TextWrapping="Wrap"
+                   Text="Pendaftaran memakai registry pengguna (HKCU), jadi tidak membutuhkan hak Administrator."/>
+
+        <StackPanel Grid.Row="7" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Click="Unregister_Click">Hapus Semua Integrasi</Button>
             <Button IsCancel="True">Tutup</Button>
         </StackPanel>
     </Grid>
