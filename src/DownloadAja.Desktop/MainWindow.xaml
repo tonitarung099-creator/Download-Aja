@@ -21,7 +21,8 @@
                     <Button Click="Pause_Click">⏸ Jeda</Button>
                     <Button Click="Stop_Click">■ Hentikan</Button>
                     <Button Click="Delete_Click">🗑 Hapus</Button>
-                    <Button IsEnabled="False" ToolTip="Akan ditambahkan pada tahap scheduler">🕒 Scheduler</Button>
+                    <Button Click="OpenFolder_Click">📁 Buka Folder</Button>
+                    <Button IsEnabled="False" ToolTip="Scheduler otomatis akan ditambahkan setelah antrean stabil">🕒 Scheduler</Button>
                 </StackPanel>
                 <TextBlock Grid.Column="1" Text="DOWNLOAD AJA" VerticalAlignment="Center"
                            HorizontalAlignment="Center" FontWeight="Bold" FontSize="18" Foreground="#0F172A"/>
@@ -60,6 +61,7 @@
                                  Background="Transparent">
                             <ListBoxItem Tag="Semua" Padding="10,8">Semua</ListBoxItem>
                             <ListBoxItem Tag="Mengunduh" Padding="10,8">Mengunduh</ListBoxItem>
+                            <ListBoxItem Tag="Antrean" Padding="10,8">Antrean</ListBoxItem>
                             <ListBoxItem Tag="Selesai" Padding="10,8">Selesai</ListBoxItem>
                             <ListBoxItem Tag="Belum selesai" Padding="10,8">Belum selesai</ListBoxItem>
                         </ListBox>
@@ -79,7 +81,6 @@
 
                         <TextBlock Text="ALAT" FontSize="11" Foreground="#64748B" FontWeight="Bold" Margin="8,20,8,5"/>
                         <ListBox BorderThickness="0" Background="Transparent">
-                            <ListBoxItem Padding="10,8" IsEnabled="False">Antrean</ListBoxItem>
                             <ListBoxItem Padding="10,8" IsEnabled="False">Scheduler</ListBoxItem>
                             <ListBoxItem Padding="10,8" IsEnabled="False">Browser</ListBoxItem>
                         </ListBox>

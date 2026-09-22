@@ -72,13 +72,20 @@ public sealed class MainViewModel : IAsyncDisposable
         await _settingsStore.SaveAsync(_settings, ct);
     }
 
-    public async Task<DownloadItem> AddAndStartAsync(string url, CancellationToken ct = default)
+    public Task<DownloadItem> AddAndStartAsync(string url, CancellationToken ct = default)
+        => AddAsync(url, DownloadDirectory, startImmediately: true, ct);
+
+    public async Task<DownloadItem> AddAsync(
+        string url,
+        string directoryPath,
+        bool startImmediately,
+        CancellationToken ct = default)
     {
         var item = new DownloadItem
         {
             Url = url,
             Name = TryGetFileName(url),
-            DirectoryPath = DownloadDirectory,
+            DirectoryPath = string.IsNullOrWhiteSpace(directoryPath) ? DownloadDirectory : directoryPath,
             Status = DownloadStatus.Menunggu
         };
 
@@ -86,8 +93,12 @@ public sealed class MainViewModel : IAsyncDisposable
 
         try
         {
-            await StartAsync(item, ct);
-            await SaveStateAsync(ct);
+            if (startImmediately)
+                await StartAsync(item, ct);
+            else
+                await SaveStateAsync(ct);
+
+            DownloadsView.Refresh();
             return item;
         }
         catch
@@ -261,6 +272,7 @@ public sealed class MainViewModel : IAsyncDisposable
             "Mengunduh" => item.Status == DownloadStatus.Mengunduh,
             "Selesai" => item.Status == DownloadStatus.Selesai,
             "Belum selesai" => item.Status != DownloadStatus.Selesai,
+            "Antrean" => item.Status == DownloadStatus.Menunggu,
             "Video" or "Audio" or "Dokumen" or "Program" or "Arsip" or "Lainnya" => item.Category == _filterKey,
             _ => true
         };

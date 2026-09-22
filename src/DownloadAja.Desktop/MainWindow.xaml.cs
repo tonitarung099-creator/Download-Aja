@@ -1,4 +1,6 @@
 using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -37,8 +39,7 @@ public partial class MainWindow : Window
         {
             EngineStatusText.Text = "Menambahkan download...";
             var item = await _viewModel.AddAndStartAsync(uri.AbsoluteUri);
-            DownloadsGrid.SelectedItem = item;
-            DownloadsGrid.ScrollIntoView(item);
+            SelectItem(item);
             EngineStatusText.Text = "Siap";
 
             if (WindowState == WindowState.Minimized)
@@ -90,9 +91,30 @@ public partial class MainWindow : Window
 
     private async void AddUrl_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new AddUrlWindow { Owner = this };
-        if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.DownloadUrl))
-            await EnqueueUrlAsync(dialog.DownloadUrl);
+        var dialog = new AddUrlWindow(_viewModel.DownloadDirectory) { Owner = this };
+        if (dialog.ShowDialog() != true)
+            return;
+
+        try
+        {
+            EngineStatusText.Text = dialog.StartImmediately
+                ? "Menambahkan download..."
+                : "Menambahkan ke antrean...";
+
+            var item = await _viewModel.AddAsync(
+                dialog.DownloadUrl,
+                dialog.DirectoryPath,
+                dialog.StartImmediately);
+
+            SelectItem(item);
+            EngineStatusText.Text = dialog.StartImmediately ? "Download dimulai" : "Masuk antrean";
+        }
+        catch (Exception ex)
+        {
+            EngineStatusText.Text = "Gagal";
+            MessageBox.Show(this, ex.Message, "Download Aja",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     private async void Start_Click(object sender, RoutedEventArgs e)
@@ -117,6 +139,35 @@ public partial class MainWindow : Window
     {
         if (DownloadsGrid.SelectedItem is not DownloadItem item) return;
         await RunItemActionAsync(() => _viewModel.RemoveAsync(item), "Menghapus dari daftar...");
+    }
+
+    private void OpenFolder_Click(object sender, RoutedEventArgs e)
+    {
+        var item = DownloadsGrid.SelectedItem as DownloadItem;
+        var directory = item?.DirectoryPath;
+
+        if (item is not null && !string.IsNullOrWhiteSpace(item.FilePath) && File.Exists(item.FilePath))
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "explorer.exe",
+                Arguments = $"/select,\"{item.FilePath}\"",
+                UseShellExecute = true
+            });
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(directory))
+            directory = _viewModel.DownloadDirectory;
+
+        if (Directory.Exists(directory))
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = directory,
+                UseShellExecute = true
+            });
+        }
     }
 
     private async void Settings_Click(object sender, RoutedEventArgs e)
@@ -208,6 +259,12 @@ public partial class MainWindow : Window
             MessageBox.Show(this, ex.Message, "Download Aja",
                 MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    private void SelectItem(DownloadItem item)
+    {
+        DownloadsGrid.SelectedItem = item;
+        DownloadsGrid.ScrollIntoView(item);
     }
 
     private static string FormatBytes(long bytes)
