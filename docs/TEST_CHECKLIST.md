@@ -1,4 +1,4 @@
-# Checklist Uji Manual Download Aja 0.4.0
+# Checklist Uji Manual Download Aja 0.5.0
 
 Gunakan artifact portable dari GitHub Actions yang berstatus **success**. Extract seluruh folder sebelum menjalankan `DownloadAja.exe`.
 
