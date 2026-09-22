@@ -34,6 +34,7 @@
 - Download HLS/DASH non-DRM melalui FFmpeg
 - Download URL video YouTube publik/non-DRM melalui yt-dlp (playlist dimatikan)
 - Tombol overlay **Download Aja** langsung di atas pemutar YouTube
+- Pilihan kualitas YouTube: Best / 2160p / 1440p / 1080p / 720p / 480p / 360p
 
 ## Menjalankan portable
 
@@ -82,8 +83,9 @@ Checklist pengujian Windows tersedia di `docs/TEST_CHECKLIST.md`. Gunakan checkl
 
 Untuk video YouTube **publik/non-DRM**, kamu bisa:
 
-- paste URL video ke **Tambah URL**, atau
-- buka video di browser lalu klik popup extension → **Download video halaman ini**.
+- paste URL video ke **Tambah URL**, lalu pilih kualitas, atau
+- buka video di browser, pilih kualitas di popup extension, lalu klik **Download**,
+- atau gunakan tombol overlay **Download Aja · [kualitas]** langsung di pemutar.
 
 Download Aja memakai `yt-dlp` + Deno + FFmpeg yang sudah berada di folder portable. Tidak perlu memasang Python, Node.js, Deno, atau FFmpeg secara terpisah.
 
