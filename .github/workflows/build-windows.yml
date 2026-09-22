@@ -133,7 +133,9 @@ jobs:
           & artifacts/Download-Aja/tools/deno/deno.exe eval "console.log('Download Aja Deno OK')"
           if ($LASTEXITCODE -ne 0) { throw "Deno eval gagal dijalankan." }
 
-          $extractors = & artifacts/Download-Aja/tools/yt-dlp/yt-dlp.exe --list-extractors
+          $yt = "artifacts/Download-Aja/tools/yt-dlp/yt-dlp.exe"
+          $deno = (Resolve-Path "artifacts/Download-Aja/tools/deno/deno.exe").Path
+          $extractors = & $yt --no-remote-components --js-runtimes "deno:$deno" --list-extractors
           if (-not ($extractors -match "youtube")) { throw "Extractor YouTube tidak ditemukan di yt-dlp." }
 
       - name: Smoke test aria2 local HTTP download
@@ -207,6 +209,40 @@ jobs:
 
           $result = Get-Item (Join-Path $smoke "result.mkv")
           if ($result.Length -le 0) { throw "Hasil remux HLS kosong." }
+
+      - name: Smoke test yt-dlp local media download
+        shell: pwsh
+        run: |
+          $yt = "artifacts/Download-Aja/tools/yt-dlp/yt-dlp.exe"
+          $deno = (Resolve-Path "artifacts/Download-Aja/tools/deno/deno.exe").Path
+          $ffmpegDir = (Resolve-Path "artifacts/Download-Aja/tools/ffmpeg").Path
+          $serve = Join-Path $env:RUNNER_TEMP "downloadaja-ytdlp-source"
+          $out = Join-Path $env:RUNNER_TEMP "downloadaja-ytdlp-output"
+          New-Item -ItemType Directory -Force -Path $serve, $out | Out-Null
+
+          $sample = Join-Path $serve "sample.mp4"
+          & artifacts/Download-Aja/tools/ffmpeg/ffmpeg.exe -hide_banner -loglevel error -f lavfi -i "testsrc=size=96x54:rate=5" -t 1 -c:v mpeg4 -q:v 5 $sample
+          if ($LASTEXITCODE -ne 0 -or -not (Test-Path $sample)) {
+            throw "Gagal membuat media uji untuk yt-dlp."
+          }
+
+          $server = Start-Process python -ArgumentList "-m","http.server","18766","--bind","127.0.0.1","--directory",$serve -PassThru -WindowStyle Hidden
+          try {
+            Start-Sleep -Seconds 2
+
+            & $yt --no-update --no-remote-components --no-playlist --windows-filenames --js-runtimes "deno:$deno" --ffmpeg-location $ffmpegDir --paths $out --output "download.%(ext)s" "http://127.0.0.1:18766/sample.mp4"
+            if ($LASTEXITCODE -ne 0) { throw "yt-dlp gagal mengunduh media HTTP lokal." }
+
+            $result = Get-ChildItem -Path $out -File | Where-Object { $_.Name -notlike "*.part" } | Select-Object -First 1
+            if (-not $result -or $result.Length -le 0) {
+              throw "yt-dlp tidak menghasilkan file media uji."
+            }
+          }
+          finally {
+            if ($server -and -not $server.HasExited) {
+              Stop-Process -Id $server.Id -Force
+            }
+          }
 
       - name: Copy Chrome extension and tools
         shell: pwsh
