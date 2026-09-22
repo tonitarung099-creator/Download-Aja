@@ -11,7 +11,7 @@ chrome.runtime.onInstalled.addListener(async () => {
   chrome.contextMenus.create({
     id: "downloadaja-link",
     title: "Download dengan Download Aja",
-    contexts: ["link", "video", "audio"]
+    contexts: ["page", "link", "video", "audio"]
   });
 
   const current = await chrome.storage.local.get([
@@ -302,11 +302,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-  const url = info.linkUrl || info.srcUrl;
-  if (!url) return;
+  let url = info.linkUrl || info.srcUrl || "";
+
+  if (!url && info.pageUrl && isYouTubeUrl(info.pageUrl))
+    url = info.pageUrl;
+
+  if (!url)
+    return;
 
   try {
-    await sendToDesktop(url, tab?.url || "");
+    await sendToDesktop(url, tab?.url || info.pageUrl || "");
   } catch (error) {
     console.error("Gagal mengirim download ke Download Aja:", error);
   }
