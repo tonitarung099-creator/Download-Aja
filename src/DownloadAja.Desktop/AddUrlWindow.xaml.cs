@@ -8,6 +8,7 @@ public partial class AddUrlWindow : Window
 {
     public string DownloadUrl => UrlBox.Text.Trim();
     public string DirectoryPath => DirectoryBox.Text.Trim();
+    public string OutputFileName => FileNameBox.Text.Trim();
     public bool StartImmediately => StartNowCheckBox.IsChecked == true;
 
     public AddUrlWindow(string defaultDirectory, string? initialUrl = null)
@@ -60,6 +61,18 @@ public partial class AddUrlWindow : Window
             MessageBox.Show(this, "Pilih folder penyimpanan.", "Download Aja",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(OutputFileName))
+        {
+            var fileName = Path.GetFileName(OutputFileName);
+            if (string.IsNullOrWhiteSpace(fileName) ||
+                fileName is "." or ".." ||
+                fileName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+            {
+                ValidationText.Text = "Nama file mengandung karakter yang tidak valid.";
+                return;
+            }
         }
 
         try

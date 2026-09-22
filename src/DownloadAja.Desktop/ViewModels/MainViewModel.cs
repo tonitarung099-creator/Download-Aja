@@ -98,21 +98,36 @@ public sealed class MainViewModel : IAsyncDisposable
         string url,
         DownloadRequestContext? requestContext = null,
         CancellationToken ct = default)
-        => AddAsync(url, DownloadDirectory, startImmediately: true, requestContext, ct);
+        => AddAsync(
+            url,
+            DownloadDirectory,
+            startImmediately: true,
+            outputFileName: null,
+            requestContext: requestContext,
+            ct: ct);
 
     public async Task<DownloadItem> AddAsync(
         string url,
         string directoryPath,
         bool startImmediately,
+        string? outputFileName = null,
         DownloadRequestContext? requestContext = null,
         CancellationToken ct = default)
     {
         var isStream = IsStreamRequest(requestContext);
+        var targetDirectory = string.IsNullOrWhiteSpace(directoryPath) ? DownloadDirectory : directoryPath;
+        var normalizedOutputName = isStream ? null : NormalizeOutputFileName(outputFileName);
+
         var item = new DownloadItem
         {
             Url = url,
-            Name = isStream ? BuildStreamFileName(requestContext?.SuggestedName) : TryGetFileName(url),
-            DirectoryPath = string.IsNullOrWhiteSpace(directoryPath) ? DownloadDirectory : directoryPath,
+            Name = isStream
+                ? BuildStreamFileName(requestContext?.SuggestedName)
+                : normalizedOutputName ?? TryGetFileName(url),
+            DirectoryPath = targetDirectory,
+            FilePath = normalizedOutputName is null
+                ? null
+                : Path.Combine(targetDirectory, normalizedOutputName),
             Status = DownloadStatus.Menunggu,
             EngineKind = isStream ? DownloadEngineKind.Ffmpeg : DownloadEngineKind.Aria2
         };
@@ -605,6 +620,22 @@ public sealed class MainViewModel : IAsyncDisposable
         }
 
         return Path.Combine(directory, $"{name}-{Guid.NewGuid():N}{ext}");
+    }
+
+    private static string? NormalizeOutputFileName(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+
+        var fileName = Path.GetFileName(value.Trim());
+        if (string.IsNullOrWhiteSpace(fileName) || fileName is "." or "..")
+            return null;
+
+        foreach (var invalid in Path.GetInvalidFileNameChars())
+            fileName = fileName.Replace(invalid, '_');
+
+        fileName = fileName.Trim(' ', '.');
+        return string.IsNullOrWhiteSpace(fileName) ? null : fileName;
     }
 
     private static string TryGetFileName(string url)

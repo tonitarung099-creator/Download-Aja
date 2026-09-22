@@ -112,7 +112,8 @@ public partial class MainWindow : Window
             var item = await _viewModel.AddAsync(
                 dialog.DownloadUrl,
                 dialog.DirectoryPath,
-                dialog.StartImmediately);
+                dialog.StartImmediately,
+                dialog.OutputFileName);
 
             SelectItem(item);
             EngineStatusText.Text = dialog.StartImmediately ? "Download dimulai" : "Masuk antrean";
@@ -490,7 +491,8 @@ public partial class MainWindow : Window
             var item = await _viewModel.AddAsync(
                 dialog.DownloadUrl,
                 dialog.DirectoryPath,
-                dialog.StartImmediately);
+                dialog.StartImmediately,
+                dialog.OutputFileName);
 
             SelectItem(item);
             EngineStatusText.Text = dialog.StartImmediately ? "Download dimulai" : "Masuk antrean";
