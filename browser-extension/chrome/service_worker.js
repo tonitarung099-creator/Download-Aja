@@ -238,7 +238,8 @@ async function sendToDesktop(url, referrer = "", mediaKind = "", suggestedName =
   if (!url)
     throw new Error("URL kosong.");
 
-  const cookieHeader = await getCookieHeader(url);
+  // Mode YouTube 0.5.0 hanya untuk video publik; jangan kirim cookie sesi YouTube.
+  const cookieHeader = isYouTubeUrl(url) ? "" : await getCookieHeader(url);
   const response = await chrome.runtime.sendNativeMessage(HOST, {
     type: "addDownload",
     url,
