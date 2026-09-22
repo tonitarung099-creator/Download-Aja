@@ -63,6 +63,18 @@ public partial class DownloadDetailsWindow : Window
         }
     }
 
+    private void OpenUrl_Click(object sender, RoutedEventArgs e)
+    {
+        if (!Uri.TryCreate(_item.Url, UriKind.Absolute, out var uri))
+            return;
+
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = uri.AbsoluteUri,
+            UseShellExecute = true
+        });
+    }
+
     private void OpenFolder_Click(object sender, RoutedEventArgs e)
     {
         var directory = !string.IsNullOrWhiteSpace(_item.FilePath)

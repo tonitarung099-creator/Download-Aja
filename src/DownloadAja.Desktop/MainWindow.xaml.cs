@@ -589,6 +589,19 @@ public partial class MainWindow : Window
         }
     }
 
+    private void OpenUrlMenu_Click(object sender, RoutedEventArgs e)
+    {
+        if (DownloadsGrid.SelectedItem is not DownloadItem item ||
+            !Uri.TryCreate(item.Url, UriKind.Absolute, out var uri))
+            return;
+
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = uri.AbsoluteUri,
+            UseShellExecute = true
+        });
+    }
+
     private async void DeleteFileMenu_Click(object sender, RoutedEventArgs e)
     {
         if (DownloadsGrid.SelectedItem is not DownloadItem item)

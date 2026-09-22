@@ -145,6 +145,7 @@
                             <MenuItem Header="Buka Folder" Click="OpenFolderMenu_Click"/>
                             <Separator/>
                             <MenuItem Header="Salin URL" Click="CopyUrlMenu_Click"/>
+                            <MenuItem Header="Buka URL di Browser" Click="OpenUrlMenu_Click"/>
                             <MenuItem Header="Properti / Detail" Click="PropertiesMenu_Click"/>
                             <Separator/>
                             <MenuItem Header="Hapus File dari Disk…" Click="DeleteFileMenu_Click"/>

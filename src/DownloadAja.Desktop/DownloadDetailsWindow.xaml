@@ -73,6 +73,7 @@
         <Grid Grid.Row="2" Margin="0,16,0,0">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
                 <Button Click="Copy_Click">Salin Detail</Button>
+                <Button Click="OpenUrl_Click">Buka URL</Button>
                 <Button Click="OpenFolder_Click">Buka Folder</Button>
             </StackPanel>
             <Button HorizontalAlignment="Right" IsCancel="True">Tutup</Button>
