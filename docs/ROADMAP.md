@@ -34,6 +34,7 @@
 - [x] Clipboard watcher opsional
 - [x] Context menu file + double-click buka file selesai
 - [x] Jendela properti/detail download
+- [x] Multi-select dan batch action untuk mulai/jeda/hentikan/hapus
 - [x] Hapus item saja atau hapus file dari disk dengan konfirmasi
 - [x] Wizard integrasi Chrome dari aplikasi
 - [x] Cookie/referrer/User-Agent opsional dari Chrome

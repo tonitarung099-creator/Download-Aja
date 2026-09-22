@@ -130,8 +130,14 @@ public partial class MainWindow : Window
 
     private async void Start_Click(object sender, RoutedEventArgs e)
     {
-        if (DownloadsGrid.SelectedItem is not DownloadItem item) return;
-        await RunItemActionAsync(() => _viewModel.StartAsync(item), "Memulai download...");
+        var items = GetSelectedItems();
+        if (items.Length == 0) return;
+
+        await RunBatchActionAsync(
+            items,
+            item => _viewModel.StartAsync(item),
+            "Memulai",
+            "download");
     }
 
     private async void StartQueue_Click(object sender, RoutedEventArgs e)
@@ -162,20 +168,53 @@ public partial class MainWindow : Window
 
     private async void Pause_Click(object sender, RoutedEventArgs e)
     {
-        if (DownloadsGrid.SelectedItem is not DownloadItem item) return;
-        await RunItemActionAsync(() => _viewModel.PauseAsync(item), "Menjeda download...");
+        var items = GetSelectedItems()
+            .Where(item => item.Status == DownloadStatus.Mengunduh)
+            .ToArray();
+        if (items.Length == 0) return;
+
+        await RunBatchActionAsync(
+            items,
+            item => _viewModel.PauseAsync(item),
+            "Menjeda",
+            "download");
     }
 
     private async void Stop_Click(object sender, RoutedEventArgs e)
     {
-        if (DownloadsGrid.SelectedItem is not DownloadItem item) return;
-        await RunItemActionAsync(() => _viewModel.StopAsync(item), "Menghentikan download...");
+        var items = GetSelectedItems();
+        if (items.Length == 0) return;
+
+        await RunBatchActionAsync(
+            items,
+            item => _viewModel.StopAsync(item),
+            "Menghentikan",
+            "download");
     }
 
     private async void Delete_Click(object sender, RoutedEventArgs e)
     {
-        if (DownloadsGrid.SelectedItem is not DownloadItem item) return;
-        await RunItemActionAsync(() => _viewModel.RemoveAsync(item), "Menghapus dari daftar...");
+        var items = GetSelectedItems();
+        if (items.Length == 0) return;
+
+        if (items.Length > 1)
+        {
+            var answer = MessageBox.Show(
+                this,
+                $"Hapus {items.Length} item dari daftar?\n\nFile yang sudah terunduh tidak akan dihapus dari disk.",
+                "Download Aja",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (answer != MessageBoxResult.Yes)
+                return;
+        }
+
+        await RunBatchActionAsync(
+            items,
+            item => _viewModel.RemoveAsync(item),
+            "Menghapus",
+            "item");
     }
 
     private void OpenFolder_Click(object sender, RoutedEventArgs e)
@@ -614,6 +653,56 @@ public partial class MainWindow : Window
             FileName = item.FilePath,
             UseShellExecute = true
         });
+    }
+
+    private DownloadItem[] GetSelectedItems()
+        => DownloadsGrid.SelectedItems
+            .OfType<DownloadItem>()
+            .Distinct()
+            .ToArray();
+
+    private async Task RunBatchActionAsync(
+        IReadOnlyList<DownloadItem> items,
+        Func<DownloadItem, Task> action,
+        string verb,
+        string noun)
+    {
+        if (items.Count == 0)
+            return;
+
+        var succeeded = 0;
+        var failed = new List<string>();
+
+        EngineStatusText.Text = $"{verb} {items.Count} {noun}...";
+
+        foreach (var item in items)
+        {
+            try
+            {
+                await action(item);
+                succeeded++;
+            }
+            catch (Exception ex)
+            {
+                failed.Add($"{item.Name}: {ex.Message}");
+            }
+        }
+
+        UpdateStatusBar();
+
+        if (failed.Count == 0)
+        {
+            EngineStatusText.Text = $"{succeeded} {noun} selesai diproses";
+            return;
+        }
+
+        EngineStatusText.Text = $"{succeeded} berhasil, {failed.Count} gagal";
+        MessageBox.Show(
+            this,
+            string.Join(Environment.NewLine, failed.Take(8)),
+            "Download Aja",
+            MessageBoxButton.OK,
+            MessageBoxImage.Warning);
     }
 
     private async Task RunItemActionAsync(Func<Task> action, string status)
