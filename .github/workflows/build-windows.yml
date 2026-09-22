@@ -75,6 +75,15 @@ jobs:
           $license = Get-ChildItem -Path $extract -Filter LICENSE.txt -Recurse | Select-Object -First 1
           if ($license) { Copy-Item $license.FullName artifacts/Download-Aja/tools/ffmpeg/LICENSE.txt }
 
+      - name: Verify bundled download engines
+        shell: pwsh
+        run: |
+          & artifacts/Download-Aja/tools/aria2/aria2c.exe --version
+          if ($LASTEXITCODE -ne 0) { throw "aria2c.exe gagal dijalankan." }
+
+          & artifacts/Download-Aja/tools/ffmpeg/ffmpeg.exe -version
+          if ($LASTEXITCODE -ne 0) { throw "ffmpeg.exe gagal dijalankan." }
+
       - name: Copy Chrome extension and tools
         shell: pwsh
         run: |
