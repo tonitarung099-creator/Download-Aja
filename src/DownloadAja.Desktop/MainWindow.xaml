@@ -4,7 +4,9 @@
         Title="Download Aja" Height="720" Width="1180"
         MinHeight="560" MinWidth="900"
         WindowStartupLocation="CenterScreen"
-        Background="#FFFFFF">
+        Background="#FFFFFF"
+        Loaded="Window_Loaded"
+        Closing="Window_Closing">
     <DockPanel>
         <Border DockPanel.Dock="Top" Background="#FFFFFF" BorderBrush="#E2E8F0" BorderThickness="0,0,0,1">
             <Grid Margin="10,7">
@@ -15,29 +17,29 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel Orientation="Horizontal">
                     <Button Click="AddUrl_Click" FontWeight="SemiBold">＋ Tambah URL</Button>
-                    <Button>▶ Mulai</Button>
-                    <Button>⏸ Jeda</Button>
-                    <Button>■ Hentikan</Button>
-                    <Button>🗑 Hapus</Button>
-                    <Button>🕒 Scheduler</Button>
+                    <Button Click="Start_Click">▶ Mulai/Lanjut</Button>
+                    <Button Click="Pause_Click">⏸ Jeda</Button>
+                    <Button Click="Stop_Click">■ Hentikan</Button>
+                    <Button Click="Delete_Click">🗑 Hapus</Button>
+                    <Button IsEnabled="False" ToolTip="Akan ditambahkan pada tahap scheduler">🕒 Scheduler</Button>
                 </StackPanel>
                 <TextBlock Grid.Column="1" Text="DOWNLOAD AJA" VerticalAlignment="Center"
                            HorizontalAlignment="Center" FontWeight="Bold" FontSize="18" Foreground="#0F172A"/>
-                <Button Grid.Column="2">⚙ Pengaturan</Button>
+                <Button Grid.Column="2" IsEnabled="False" ToolTip="Pengaturan lanjutan sedang dibangun">⚙ Pengaturan</Button>
             </Grid>
         </Border>
 
         <StatusBar DockPanel.Dock="Bottom" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="0,1,0,0">
             <StatusBarItem>
-                <TextBlock Text="Siap"/>
+                <TextBlock x:Name="EngineStatusText" Text="Menyiapkan mesin download..."/>
             </StatusBarItem>
             <Separator/>
             <StatusBarItem>
-                <TextBlock Text="Kecepatan: 0 B/s"/>
+                <TextBlock x:Name="SpeedStatusText" Text="Kecepatan: 0 B/s"/>
             </StatusBarItem>
             <Separator/>
             <StatusBarItem>
-                <TextBlock Text="Aktif: 0"/>
+                <TextBlock x:Name="ActiveStatusText" Text="Aktif: 0"/>
             </StatusBarItem>
         </StatusBar>
 
@@ -86,26 +88,33 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="260"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="Daftar Download" FontSize="22" FontWeight="SemiBold" Foreground="#0F172A"
-                               VerticalAlignment="Center"/>
+                    <StackPanel>
+                        <TextBlock Text="Daftar Download" FontSize="22" FontWeight="SemiBold" Foreground="#0F172A"/>
+                        <TextBlock Text="{Binding DownloadDirectory, StringFormat=Lokasi default: {0}}"
+                                   Foreground="#64748B" FontSize="11" Margin="0,3,0,0"/>
+                    </StackPanel>
                     <TextBox Grid.Column="1" Height="34" VerticalContentAlignment="Center" Padding="10,0"
-                             ToolTip="Cari nama atau URL"/>
+                             ToolTip="Pencarian akan diaktifkan pada tahap berikutnya"
+                             IsEnabled="False"/>
                 </Grid>
 
-                <DataGrid Grid.Row="1" Margin="14,0,14,14"
+                <DataGrid x:Name="DownloadsGrid"
+                          Grid.Row="1" Margin="14,0,14,14"
                           ItemsSource="{Binding Downloads}"
                           AutoGenerateColumns="False"
                           IsReadOnly="True"
                           CanUserAddRows="False"
+                          SelectionMode="Single"
                           HeadersVisibility="Column"
                           GridLinesVisibility="Horizontal"
                           BorderBrush="#E2E8F0">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Nama" Binding="{Binding Name}" Width="2*"/>
-                        <DataGridTextColumn Header="Ukuran" Binding="{Binding TotalBytes}" Width="110"/>
-                        <DataGridTextColumn Header="Progres" Binding="{Binding ProgressPercent, StringFormat={}{0:F0}%}" Width="100"/>
-                        <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="120"/>
-                        <DataGridTextColumn Header="Kecepatan" Binding="{Binding SpeedBytesPerSecond}" Width="120"/>
+                        <DataGridTextColumn Header="Ukuran" Binding="{Binding SizeText}" Width="155"/>
+                        <DataGridTextColumn Header="Progres" Binding="{Binding ProgressText}" Width="75"/>
+                        <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="105"/>
+                        <DataGridTextColumn Header="Kecepatan" Binding="{Binding SpeedText}" Width="105"/>
+                        <DataGridTextColumn Header="Sisa" Binding="{Binding EtaText}" Width="80"/>
                         <DataGridTextColumn Header="Alamat" Binding="{Binding Url}" Width="2*"/>
                     </DataGrid.Columns>
                 </DataGrid>

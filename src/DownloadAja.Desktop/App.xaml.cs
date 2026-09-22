@@ -14,7 +14,7 @@ public partial class App : Application
 
         var url = GetArgumentValue(e.Args, "--add-url");
         if (!string.IsNullOrWhiteSpace(url))
-            main.EnqueueUrl(url);
+            _ = main.EnqueueUrlAsync(url);
     }
 
     private static string? GetArgumentValue(string[] args, string name)

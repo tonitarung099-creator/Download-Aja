@@ -10,6 +10,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
@@ -26,9 +27,29 @@ jobs:
       - name: Publish browser bridge
         run: dotnet publish src/DownloadAja.BrowserBridge/DownloadAja.BrowserBridge.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o artifacts/Download-Aja/browser-bridge
 
-      - name: Copy Chrome extension
+      - name: Bundle aria2 1.37.0
         shell: pwsh
-        run: Copy-Item browser-extension/chrome artifacts/Download-Aja/browser-extension/chrome -Recurse
+        run: |
+          $url = "https://github.com/aria2/aria2/releases/download/release-1.37.0/aria2-1.37.0-win-64bit-build1.zip"
+          $zip = Join-Path $env:RUNNER_TEMP "aria2.zip"
+          Invoke-WebRequest -Uri $url -OutFile $zip
+          $actual = (Get-FileHash -Path $zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          $expected = "67d015301eef0b612191212d564c5bb0a14b5b9c4796b76454276a4d28d9b288"
+          if ($actual -ne $expected) { throw "Checksum aria2 tidak cocok: $actual" }
+
+          $extract = Join-Path $env:RUNNER_TEMP "aria2"
+          Expand-Archive -Path $zip -DestinationPath $extract -Force
+          $ariaDir = Join-Path $extract "aria2-1.37.0-win-64bit-build1"
+          New-Item -ItemType Directory -Force -Path artifacts/Download-Aja/tools/aria2 | Out-Null
+          Copy-Item (Join-Path $ariaDir "aria2c.exe") artifacts/Download-Aja/tools/aria2/aria2c.exe
+          Copy-Item (Join-Path $ariaDir "COPYING") artifacts/Download-Aja/tools/aria2/COPYING
+
+      - name: Copy Chrome extension and tools
+        shell: pwsh
+        run: |
+          Copy-Item browser-extension/chrome artifacts/Download-Aja/browser-extension/chrome -Recurse
+          Copy-Item tools/register-chrome-integration.ps1 artifacts/Download-Aja/register-chrome-integration.ps1
+          Copy-Item THIRD_PARTY_NOTICES.md artifacts/Download-Aja/THIRD_PARTY_NOTICES.md
 
       - name: Upload portable artifact
         uses: actions/upload-artifact@v4
