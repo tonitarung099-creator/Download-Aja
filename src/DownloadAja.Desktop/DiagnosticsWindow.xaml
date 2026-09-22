@@ -42,6 +42,7 @@
                 <Button Click="Refresh_Click">Refresh</Button>
                 <Button Click="Copy_Click">Salin Diagnostik</Button>
                 <Button Click="OpenLogs_Click">Buka Folder Log</Button>
+                <Button Click="CheckUpdates_Click">Periksa Pembaruan</Button>
             </StackPanel>
             <Button HorizontalAlignment="Right" IsCancel="True">Tutup</Button>
         </Grid>

@@ -54,7 +54,7 @@
 - [x] Keyboard shortcuts dasar
 - [ ] Audit accessibility lengkap
 - [ ] Dark mode
-- [ ] Update checker
+- [x] Update checker berbasis GitHub Releases
 
 ## Tahap 5 — Rilis
 - [x] Portable ZIP otomatis dari GitHub Actions

@@ -1,7 +1,10 @@
 using System.Diagnostics;
 using System.IO;
+using System.Net;
+using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text;
+using System.Text.Json;
 using System.Windows;
 
 namespace DownloadAja.Desktop;
@@ -42,6 +45,114 @@ public partial class DiagnosticsWindow : Window
             FileName = folder,
             UseShellExecute = true
         });
+    }
+
+    private async void CheckUpdates_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            using var http = new HttpClient
+            {
+                Timeout = TimeSpan.FromSeconds(10)
+            };
+            http.DefaultRequestHeaders.UserAgent.Add(
+                new ProductInfoHeaderValue("DownloadAja", "0.4.0"));
+
+            using var response = await http.GetAsync(
+                "https://api.github.com/repos/tonitarung099-creator/Download-Aja/releases/latest");
+
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                MessageBox.Show(
+                    this,
+                    "Belum ada GitHub Release resmi. Gunakan artifact GitHub Actions terbaru yang berstatus sukses.",
+                    "Download Aja",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
+            response.EnsureSuccessStatusCode();
+
+            using var document = JsonDocument.Parse(
+                await response.Content.ReadAsStreamAsync());
+
+            var tag = document.RootElement.TryGetProperty("tag_name", out var tagElement)
+                ? tagElement.GetString()
+                : null;
+
+            var htmlUrl = document.RootElement.TryGetProperty("html_url", out var urlElement)
+                ? urlElement.GetString()
+                : null;
+
+            var current = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(0, 0, 0);
+            var latest = ParseReleaseVersion(tag);
+
+            if (latest is null)
+            {
+                MessageBox.Show(
+                    this,
+                    $"Release terbaru ditemukan ({tag ?? "tanpa versi"}), tetapi versinya tidak dapat dibandingkan.",
+                    "Download Aja",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
+            if (latest <= current)
+            {
+                MessageBox.Show(
+                    this,
+                    $"Versi kamu sudah terbaru.\n\nTerpasang: {current.ToString(3)}\nRelease: {latest}",
+                    "Download Aja",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
+            var answer = MessageBox.Show(
+                this,
+                $"Versi baru tersedia.\n\nTerpasang: {current.ToString(3)}\nTerbaru: {latest}\n\nBuka halaman release?",
+                "Download Aja",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Information);
+
+            if (answer == MessageBoxResult.Yes && Uri.TryCreate(htmlUrl, UriKind.Absolute, out var releaseUri))
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = releaseUri.AbsoluteUri,
+                    UseShellExecute = true
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                this,
+                $"Tidak dapat memeriksa pembaruan.\n\n{ex.Message}",
+                "Download Aja",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+    }
+
+    private static Version? ParseReleaseVersion(string? tag)
+    {
+        if (string.IsNullOrWhiteSpace(tag))
+            return null;
+
+        var normalized = tag.Trim();
+        if (normalized.StartsWith("v", StringComparison.OrdinalIgnoreCase))
+            normalized = normalized[1..];
+
+        var dash = normalized.IndexOf('-');
+        if (dash >= 0)
+            normalized = normalized[..dash];
+
+        return Version.TryParse(normalized, out var version)
+            ? version
+            : null;
     }
 
     private void RefreshDiagnostics()
