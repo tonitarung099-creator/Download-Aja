@@ -32,10 +32,6 @@ public sealed class YtDlpDownloader
             throw new FileNotFoundException("FFmpeg tidak ditemukan. Gunakan build portable terbaru.", ffmpeg);
 
         Directory.CreateDirectory(directory);
-
-        var dataDirectory = Path.Combine(AppContext.BaseDirectory, "data");
-        var ytDlpCache = Path.Combine(dataDirectory, "yt-dlp-cache");
-        var denoCache = Path.Combine(dataDirectory, "deno-cache");
         Directory.CreateDirectory(ytDlpCache);
         Directory.CreateDirectory(denoCache);
 
@@ -51,15 +47,16 @@ public sealed class YtDlpDownloader
             RedirectStandardError = true
         };
 
+        // Semua state runtime disimpan di folder portable Download Aja.
         psi.Environment["DENO_DIR"] = denoCache;
+        psi.Environment["NO_COLOR"] = "1";
 
+        // Jangan biarkan config/plugin/cookie dari profil Windows mengubah perilaku aplikasi.
         Add(psi, "--ignore-config");
         Add(psi, "--no-plugin-dirs");
         Add(psi, "--no-cookies-from-browser");
         Add(psi, "--cache-dir", ytDlpCache);
-        Add(psi, "--ignore-config");
-        Add(psi, "--no-plugin-dirs");
-        Add(psi, "--cache-dir", ytDlpCache);
+
         Add(psi, "--no-playlist");
         Add(psi, "--windows-filenames");
         Add(psi, "--trim-filenames", "180");
@@ -79,7 +76,8 @@ public sealed class YtDlpDownloader
         Add(psi, "--output", outputTemplate);
         Add(psi, "--print", "before_dl:__DA_TITLE__%(title)s");
         Add(psi, "--print", "after_move:__DA_FILE__%(filepath)s");
-        // --print dapat mengaktifkan quiet mode; letakkan --progress setelahnya.
+
+        // --print dapat mengaktifkan quiet mode, jadi --progress ditempatkan setelahnya.
         Add(psi, "--progress");
 
         if (speedLimitBytesPerSecond > 0)
@@ -91,12 +89,7 @@ public sealed class YtDlpDownloader
         if (!string.IsNullOrWhiteSpace(context?.Referer))
             Add(psi, "--referer", SanitizeHeaderValue(context.Referer, 4096));
 
-        // Paksa cache/runtime tetap di folder portable, bukan profil Windows pengguna.
-        psi.Environment["DENO_DIR"] = denoCache;
-        psi.Environment["NO_COLOR"] = "1";
-
-        // Cookie sesi browser sengaja tidak diteruskan ke command line yt-dlp.
-        // Tahap awal YouTube dibatasi pada media publik/non-DRM.
+        // Tahap 0.5.0 dibatasi pada media publik/non-DRM.
         psi.ArgumentList.Add(url);
 
         var process = Process.Start(psi)
