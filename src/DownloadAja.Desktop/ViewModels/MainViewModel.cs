@@ -422,7 +422,7 @@ public sealed class MainViewModel : IAsyncDisposable
                 "File hasil download tidak ditemukan. Gunakan Hapus untuk menghapus item dari daftar saja.",
                 filePath);
 
-        if (item.Status == DownloadStatus.Mengunduh)
+        if (item.Status is DownloadStatus.Mengunduh or DownloadStatus.Dijeda)
             await StopAsync(item, ct);
 
         try
