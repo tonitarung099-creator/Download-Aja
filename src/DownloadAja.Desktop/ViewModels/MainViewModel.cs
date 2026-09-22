@@ -509,9 +509,7 @@ public sealed class MainViewModel : IAsyncDisposable
             else if (item.Status != DownloadStatus.Dibatalkan)
             {
                 item.Status = DownloadStatus.Gagal;
-                item.ErrorMessage = string.IsNullOrWhiteSpace(session.ErrorText)
-                    ? "yt-dlp gagal menyelesaikan unduhan YouTube."
-                    : session.ErrorText;
+                item.ErrorMessage = BuildYtDlpErrorMessage(session.ErrorText);
             }
 
             _ytDlpSessions.Remove(pair.Key);
@@ -671,6 +669,38 @@ public sealed class MainViewModel : IAsyncDisposable
             item.Status = DownloadStatus.Gagal;
             throw;
         }
+    }
+
+    private static string BuildYtDlpErrorMessage(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+            return "yt-dlp gagal menyelesaikan unduhan YouTube.";
+
+        if (raw.Contains("Private video", StringComparison.OrdinalIgnoreCase))
+            return "Video YouTube ini private dan tidak dapat diunduh tanpa akses yang sah.";
+
+        if (raw.Contains("Sign in", StringComparison.OrdinalIgnoreCase) ||
+            raw.Contains("login", StringComparison.OrdinalIgnoreCase) ||
+            raw.Contains("cookies", StringComparison.OrdinalIgnoreCase))
+            return "YouTube meminta login/verifikasi untuk video ini. Download Aja 0.5.0 hanya menangani video publik yang dapat diakses tanpa login.";
+
+        if (raw.Contains("members-only", StringComparison.OrdinalIgnoreCase) ||
+            raw.Contains("members only", StringComparison.OrdinalIgnoreCase))
+            return "Video ini khusus member dan tidak didukung oleh mode YouTube publik.";
+
+        if (raw.Contains("DRM", StringComparison.OrdinalIgnoreCase))
+            return "Media ini terdeteksi memakai DRM dan tidak didukung.";
+
+        if (raw.Contains("not available", StringComparison.OrdinalIgnoreCase) ||
+            raw.Contains("Video unavailable", StringComparison.OrdinalIgnoreCase))
+            return "Video YouTube tidak tersedia untuk URL/region ini.";
+
+        var lines = raw
+            .Replace("\r\n", "\n")
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .TakeLast(5);
+
+        return string.Join(Environment.NewLine, lines);
     }
 
     private void StartYtDlp(DownloadItem item, DownloadRequestContext? requestContext)
