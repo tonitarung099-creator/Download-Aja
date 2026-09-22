@@ -543,6 +543,37 @@ public partial class MainWindow : Window
         }
     }
 
+    private async void DeleteFileMenu_Click(object sender, RoutedEventArgs e)
+    {
+        if (DownloadsGrid.SelectedItem is not DownloadItem item)
+            return;
+
+        if (string.IsNullOrWhiteSpace(item.FilePath) || !File.Exists(item.FilePath))
+        {
+            MessageBox.Show(
+                this,
+                "File hasil download belum tersedia atau sudah tidak ada di disk.\n\nGunakan Hapus jika hanya ingin menghapus item dari daftar.",
+                "Download Aja",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        var answer = MessageBox.Show(
+            this,
+            $"Hapus file ini secara permanen dari disk?\n\n{item.FilePath}\n\nItem juga akan dihapus dari daftar Download Aja.",
+            "Download Aja",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (answer != MessageBoxResult.Yes)
+            return;
+
+        await RunItemActionAsync(
+            () => _viewModel.RemoveAndDeleteFileAsync(item),
+            "Menghapus file dari disk...");
+    }
+
     private void PropertiesMenu_Click(object sender, RoutedEventArgs e)
     {
         if (DownloadsGrid.SelectedItem is not DownloadItem item)

@@ -34,6 +34,7 @@
 - [x] Clipboard watcher opsional
 - [x] Context menu file + double-click buka file selesai
 - [x] Jendela properti/detail download
+- [x] Hapus item saja atau hapus file dari disk dengan konfirmasi
 - [x] Wizard integrasi Chrome dari aplikasi
 - [x] Cookie/referrer/User-Agent opsional dari Chrome
 - [x] Interception download Chrome yang dapat dinyalakan/dimatikan dari extension

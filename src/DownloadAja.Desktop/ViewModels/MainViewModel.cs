@@ -413,6 +413,32 @@ public sealed class MainViewModel : IAsyncDisposable
         await SaveStateAsync(ct);
     }
 
+    public async Task RemoveAndDeleteFileAsync(DownloadItem item, CancellationToken ct = default)
+    {
+        var filePath = item.FilePath;
+
+        if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            throw new FileNotFoundException(
+                "File hasil download tidak ditemukan. Gunakan Hapus untuk menghapus item dari daftar saja.",
+                filePath);
+
+        if (item.Status == DownloadStatus.Mengunduh)
+            await StopAsync(item, ct);
+
+        try
+        {
+            File.Delete(filePath);
+        }
+        catch (Exception ex)
+        {
+            throw new IOException($"File tidak dapat dihapus: {ex.Message}", ex);
+        }
+
+        Downloads.Remove(item);
+        DownloadsView.Refresh();
+        await SaveStateAsync(ct);
+    }
+
     public async Task RefreshAsync(CancellationToken ct = default)
     {
         if (_engine.IsRunning && _engine.Client is not null)

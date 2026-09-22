@@ -146,6 +146,8 @@
                             <MenuItem Header="Salin URL" Click="CopyUrlMenu_Click"/>
                             <MenuItem Header="Properti / Detail" Click="PropertiesMenu_Click"/>
                             <Separator/>
+                            <MenuItem Header="Hapus File dari Disk…" Click="DeleteFileMenu_Click"/>
+                            <Separator/>
                             <MenuItem Header="Mulai / Coba Lagi" Click="StartMenu_Click"/>
                             <MenuItem Header="Jeda" Click="PauseMenu_Click"/>
                         </ContextMenu>
