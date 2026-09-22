@@ -265,7 +265,7 @@ jobs:
             }
           }
 
-      - name: Smoke test yt-dlp stop and resume
+      - name: Smoke test yt-dlp resume from part file
         shell: pwsh
         run: |
           $yt = (Resolve-Path "artifacts/Download-Aja/tools/yt-dlp/yt-dlp.exe").Path
@@ -278,20 +278,61 @@ jobs:
           $rangeLog = Join-Path $root "ranges.log"
           New-Item -ItemType Directory -Force -Path $root, $out, $cache, $denoCache | Out-Null
 
-          $stream = [IO.File]::Open($source, [IO.FileMode]::Create, [IO.FileAccess]::Write, [IO.FileShare]::None)
+          # File sumber 32 MB dan file .part awal 4 MB.
+          # Konten nol sengaja dipakai agar pembuatan fixture cepat dan hash tetap deterministik.
+          $sourceStream = [IO.File]::Open($source, [IO.FileMode]::Create, [IO.FileAccess]::Write, [IO.FileShare]::None)
           try {
-            $stream.SetLength(32MB)
+            $sourceStream.SetLength(32MB)
           }
           finally {
-            $stream.Dispose()
+            $sourceStream.Dispose()
           }
 
-          $server = Start-Process python -ArgumentList "tests/range_http_server.py","--file",$source,"--port","18767","--log",$rangeLog,"--delay-ms","15" -PassThru -WindowStyle Hidden
+          $partPath = Join-Path $out "resume.mp4.part"
+          $partStream = [IO.File]::Open($partPath, [IO.FileMode]::Create, [IO.FileAccess]::Write, [IO.FileShare]::None)
+          try {
+            $partStream.SetLength(4MB)
+          }
+          finally {
+            $partStream.Dispose()
+          }
+
+          $initialPartLength = (Get-Item $partPath).Length
+          if ($initialPartLength -ne 4MB) {
+            throw "Fixture .part tidak memiliki ukuran 4 MB."
+          }
+
+          $serverOut = Join-Path $root "server.out.log"
+          $serverErr = Join-Path $root "server.err.log"
+          $server = Start-Process python -ArgumentList "tests/range_http_server.py","--file",$source,"--port","18767","--log",$rangeLog,"--delay-ms","0" -RedirectStandardOutput $serverOut -RedirectStandardError $serverErr -PassThru -WindowStyle Hidden
+
           $previousDenoDir = $env:DENO_DIR
           $env:DENO_DIR = $denoCache
 
           try {
-            Start-Sleep -Seconds 2
+            $serverReady = $false
+            for ($attempt = 0; $attempt -lt 40; $attempt++) {
+              if ($server.HasExited) {
+                $serverError = if (Test-Path $serverErr) { Get-Content $serverErr -Raw } else { "" }
+                throw "Range server berhenti sebelum siap. $serverError"
+              }
+
+              try {
+                $head = Invoke-WebRequest -Uri "http://127.0.0.1:18767/sample.mp4" -Method Head -TimeoutSec 2
+                if ($head.StatusCode -eq 200) {
+                  $serverReady = $true
+                  break
+                }
+              }
+              catch {
+              }
+
+              Start-Sleep -Milliseconds 250
+            }
+
+            if (-not $serverReady) {
+              throw "Range server tidak siap dalam batas waktu test."
+            }
 
             $ytArgs = @(
               "--ignore-config",
@@ -309,67 +350,30 @@ jobs:
               "http://127.0.0.1:18767/sample.mp4"
             )
 
-            $psi = [Diagnostics.ProcessStartInfo]::new()
-            $psi.FileName = $yt
-            $psi.UseShellExecute = $false
-            $psi.CreateNoWindow = $true
-            foreach ($arg in $ytArgs) {
-              [void]$psi.ArgumentList.Add([string]$arg)
-            }
-            $psi.Environment["DENO_DIR"] = $denoCache
-
-            $first = [Diagnostics.Process]::Start($psi)
-
-            $part = $null
-            for ($attempt = 0; $attempt -lt 60; $attempt++) {
-              Start-Sleep -Milliseconds 250
-
-              if ($first.HasExited) {
-                throw "Download yt-dlp pertama selesai sebelum file .part sempat diuji."
-              }
-
-              $candidate = Get-ChildItem -Path $out -Filter "*.part" -File -ErrorAction SilentlyContinue | Select-Object -First 1
-              if ($candidate -and $candidate.Length -gt 0) {
-                $part = $candidate
-                break
-              }
-            }
-
-            if (-not $part) {
-              $first.Kill($true)
-              $first.WaitForExit()
-              throw "File .part yt-dlp tidak muncul dalam batas waktu test."
-            }
-
-            Start-Sleep -Milliseconds 500
-            $first.Kill($true)
-            $first.WaitForExit()
-
-            $part.Refresh()
-            $sourceLength = (Get-Item $source).Length
-            if ($part.Length -le 0 -or $part.Length -ge $sourceLength) {
-              throw "Ukuran file .part tidak valid untuk test resume: $($part.Length)."
-            }
-
             & $yt @ytArgs
             if ($LASTEXITCODE -ne 0) {
-              throw "yt-dlp gagal melanjutkan file .part."
+              throw "yt-dlp gagal melanjutkan fixture file .part."
             }
 
-            $result = Get-ChildItem -Path $out -File | Where-Object { $_.Name -notlike "*.part" } | Select-Object -First 1
-            if (-not $result) {
+            $result = Join-Path $out "resume.mp4"
+            if (-not (Test-Path $result)) {
               throw "File final yt-dlp tidak ditemukan setelah resume."
             }
 
+            if (Test-Path $partPath) {
+              throw "File .part masih tersisa setelah resume selesai."
+            }
+
             $sourceHash = (Get-FileHash $source -Algorithm SHA256).Hash
-            $resultHash = (Get-FileHash $result.FullName -Algorithm SHA256).Hash
+            $resultHash = (Get-FileHash $result -Algorithm SHA256).Hash
             if ($sourceHash -ne $resultHash) {
               throw "Hash file hasil resume yt-dlp tidak cocok."
             }
 
             $positiveRange = Select-String -Path $rangeLog -Pattern "RANGE bytes=([1-9][0-9]*)-" | Select-Object -First 1
             if (-not $positiveRange) {
-              throw "Server tidak melihat Range request dengan offset > 0 saat resume."
+              $rangeText = if (Test-Path $rangeLog) { Get-Content $rangeLog -Raw } else { "(log kosong)" }
+              throw "Server tidak melihat Range request dengan offset > 0 saat resume. Log: $rangeText"
             }
           }
           finally {
