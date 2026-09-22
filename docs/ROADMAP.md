@@ -47,9 +47,10 @@
 - [x] Verifikasi executable aria2/FFmpeg di CI
 - [x] Smoke test HLS lokal melalui FFmpeg
 - [ ] Test unit lebih lengkap
-- [ ] Test integrasi HTTP lokal untuk aria2
+- [x] Test integrasi HTTP lokal untuk aria2
 - [x] Crash logging lokal
-- [ ] Accessibility dan keyboard shortcuts
+- [x] Keyboard shortcuts dasar
+- [ ] Audit accessibility lengkap
 - [ ] Dark mode
 - [ ] Update checker
 

@@ -9,7 +9,8 @@
         Closing="Window_Closing"
         AllowDrop="True"
         DragOver="Window_DragOver"
-        Drop="Window_Drop">
+        Drop="Window_Drop"
+        PreviewKeyDown="Window_PreviewKeyDown">
     <DockPanel>
         <Border DockPanel.Dock="Top" Background="#FFFFFF" BorderBrush="#E2E8F0" BorderThickness="0,0,0,1">
             <Grid Margin="10,7">
@@ -19,7 +20,7 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel Orientation="Horizontal">
-                    <Button Click="AddUrl_Click" FontWeight="SemiBold">＋ Tambah URL</Button>
+                    <Button Click="AddUrl_Click" FontWeight="SemiBold" ToolTip="Tambah URL (Ctrl+N)">＋ Tambah URL</Button>
                     <Button Click="Start_Click">▶ Mulai/Lanjut</Button>
                     <Button Click="StartQueue_Click">▶▶ Mulai Antrean</Button>
                     <Button Click="StopQueue_Click">⏹ Antrean</Button>
@@ -28,7 +29,7 @@
                     <Button Click="Delete_Click">🗑 Hapus</Button>
                     <Button Click="OpenFolder_Click">📁 Buka Folder</Button>
                     <Button Click="Scheduler_Click">🕒 Scheduler</Button>
-                    <Button Click="BrowserIntegration_Click">🌐 Browser</Button>
+                    <Button Click="BrowserIntegration_Click" ToolTip="Integrasi Browser (Ctrl+B)">🌐 Browser</Button>
                 </StackPanel>
                 <TextBlock Grid.Column="1" Text="DOWNLOAD AJA" VerticalAlignment="Center"
                            HorizontalAlignment="Center" FontWeight="Bold" FontSize="18" Foreground="#0F172A"/>

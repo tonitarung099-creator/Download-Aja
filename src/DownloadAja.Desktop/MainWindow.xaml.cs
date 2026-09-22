@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Threading;
 using DownloadAja.Core.Models;
 using DownloadAja.Desktop.ViewModels;
@@ -306,6 +307,71 @@ public partial class MainWindow : Window
         {
             MessageBox.Show(this, ex.Message, "Download Aja",
                 MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private async void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        var ctrl = Keyboard.Modifiers.HasFlag(ModifierKeys.Control);
+        var focusedInEditor = Keyboard.FocusedElement is TextBox or ComboBox;
+
+        if (ctrl && e.Key == Key.N)
+        {
+            e.Handled = true;
+            AddUrl_Click(sender, new RoutedEventArgs());
+            return;
+        }
+
+        if (ctrl && e.Key == Key.F)
+        {
+            e.Handled = true;
+            SearchBox.Focus();
+            SearchBox.SelectAll();
+            return;
+        }
+
+        if (ctrl && e.Key == Key.B)
+        {
+            e.Handled = true;
+            BrowserIntegration_Click(sender, new RoutedEventArgs());
+            return;
+        }
+
+        if (focusedInEditor)
+            return;
+
+        if (DownloadsGrid.SelectedItem is not DownloadItem item)
+            return;
+
+        if (e.Key == Key.Space)
+        {
+            e.Handled = true;
+            if (item.Status == DownloadStatus.Mengunduh)
+                await RunItemActionAsync(() => _viewModel.PauseAsync(item), "Menjeda download...");
+            else if (item.Status != DownloadStatus.Selesai)
+                await RunItemActionAsync(() => _viewModel.StartAsync(item), "Memulai download...");
+            return;
+        }
+
+        if (e.Key == Key.Enter && item.Status == DownloadStatus.Selesai)
+        {
+            e.Handled = true;
+            OpenFile(item);
+            return;
+        }
+
+        if (e.Key == Key.Delete)
+        {
+            e.Handled = true;
+            var answer = MessageBox.Show(
+                this,
+                $"Hapus \"{item.Name}\" dari daftar?\n\nFile yang sudah terunduh tidak akan dihapus dari disk.",
+                "Download Aja",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (answer == MessageBoxResult.Yes)
+                await RunItemActionAsync(() => _viewModel.RemoveAsync(item), "Menghapus dari daftar...");
         }
     }
 
