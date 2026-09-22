@@ -1,7 +1,23 @@
 const list = document.getElementById("list");
 const clearButton = document.getElementById("clear");
 const message = document.getElementById("message");
+const youtubeCard = document.getElementById("youtubeCard");
+const downloadPageButton = document.getElementById("downloadPage");
 let tabId = null;
+let currentTabUrl = "";
+
+function isYouTubeUrl(value) {
+  try {
+    const host = new URL(value).hostname.toLowerCase();
+    return host === "youtu.be"
+      || host === "youtube.com"
+      || host.endsWith(".youtube.com")
+      || host === "youtube-nocookie.com"
+      || host.endsWith(".youtube-nocookie.com");
+  } catch {
+    return false;
+  }
+}
 
 function formatBytes(bytes) {
   if (!bytes) return "ukuran tidak diketahui";
@@ -78,6 +94,13 @@ function render(items) {
 async function load() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   tabId = tab?.id ?? null;
+  currentTabUrl = tab?.url || "";
+
+  if (isYouTubeUrl(currentTabUrl)) {
+    youtubeCard.style.display = "block";
+  } else {
+    youtubeCard.style.display = "none";
+  }
 
   if (tabId === null) {
     render([]);
@@ -91,6 +114,34 @@ async function load() {
 
   render(response?.items || []);
 }
+
+downloadPageButton.addEventListener("click", async () => {
+  if (!isYouTubeUrl(currentTabUrl))
+    return;
+
+  downloadPageButton.disabled = true;
+  downloadPageButton.textContent = "Mengirim…";
+  showMessage("");
+
+  try {
+    const response = await chrome.runtime.sendMessage({
+      type: "downloadYouTubePage",
+      url: currentTabUrl
+    });
+
+    if (response?.ok) {
+      downloadPageButton.textContent = "Terkirim";
+    } else {
+      downloadPageButton.disabled = false;
+      downloadPageButton.textContent = "Download video halaman ini";
+      showMessage(response?.error || "Gagal mengirim URL YouTube ke Download Aja.");
+    }
+  } catch (error) {
+    downloadPageButton.disabled = false;
+    downloadPageButton.textContent = "Download video halaman ini";
+    showMessage(String(error?.message || error));
+  }
+});
 
 clearButton.addEventListener("click", async () => {
   if (tabId === null) return;

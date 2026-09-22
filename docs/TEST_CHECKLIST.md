@@ -95,6 +95,8 @@ Jangan kirim cookie, password, token, atau API key.
 ## J. YouTube publik/non-DRM
 
 - [ ] Salin URL video YouTube publik lalu Tambah URL.
+- [ ] Pada tab YouTube, popup extension menampilkan tombol Download video halaman ini.
+- [ ] Tombol tersebut mengirim URL halaman ke aplikasi tanpa harus copy-paste.
 - [ ] Item dikenali sebagai kategori Video.
 - [ ] yt-dlp mulai mengunduh tanpa meminta instal Python/Node/Deno.
 - [ ] Progress, kecepatan, dan ETA tampil saat ukuran dapat diketahui.

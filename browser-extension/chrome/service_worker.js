@@ -35,6 +35,19 @@ chrome.runtime.onInstalled.addListener(async () => {
     await chrome.storage.local.set(defaults);
 });
 
+function isYouTubeUrl(value) {
+  try {
+    const host = new URL(value).hostname.toLowerCase();
+    return host === "youtu.be"
+      || host === "youtube.com"
+      || host.endsWith(".youtube.com")
+      || host === "youtube-nocookie.com"
+      || host.endsWith(".youtube-nocookie.com");
+  } catch {
+    return false;
+  }
+}
+
 function getExtension(url) {
   try {
     const pathname = new URL(url).pathname.toLowerCase();
@@ -241,6 +254,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message?.type === "clearMediaForTab") {
       await setMedia(message.tabId, []);
       sendResponse({ ok: true });
+      return;
+    }
+
+    if (message?.type === "downloadYouTubePage") {
+      if (!isYouTubeUrl(message.url)) {
+        sendResponse({ ok: false, error: "Tab aktif bukan halaman YouTube." });
+        return;
+      }
+
+      try {
+        await sendToDesktop(message.url, message.url || "");
+        sendResponse({ ok: true });
+      } catch (error) {
+        sendResponse({ ok: false, error: String(error?.message || error) });
+      }
       return;
     }
 

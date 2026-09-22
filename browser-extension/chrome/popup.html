@@ -87,6 +87,24 @@
       color: #9a3412;
       font-size: 12px;
     }
+    #youtubeCard {
+      display: none;
+      margin: 10px 10px 0;
+      padding: 12px;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 11px;
+    }
+    #youtubeCard .title {
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    #youtubeCard .hint {
+      color: #64748b;
+      font-size: 11px;
+      line-height: 1.4;
+      margin-bottom: 10px;
+    }
   </style>
 </head>
 <body>
@@ -95,6 +113,11 @@
     <button id="clear">Bersihkan</button>
   </header>
   <div id="message"></div>
+  <section id="youtubeCard">
+    <div class="title">Video YouTube</div>
+    <div class="hint">Download video publik/non-DRM dari halaman YouTube aktif menggunakan yt-dlp + FFmpeg.</div>
+    <button id="downloadPage" class="primary">Download video halaman ini</button>
+  </section>
   <main id="list">
     <div class="empty">Membaca media pada tab ini…</div>
   </main>
