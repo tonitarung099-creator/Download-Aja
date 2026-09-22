@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.IO;
 using DownloadAja.Core.Models;
 
 namespace DownloadAja.Desktop.ViewModels;
@@ -6,10 +7,6 @@ namespace DownloadAja.Desktop.ViewModels;
 public sealed class MainViewModel
 {
     public ObservableCollection<DownloadItem> Downloads { get; } = new();
-
-    public string StatusText => Downloads.Count == 0
-        ? "Siap — belum ada download"
-        : $"{Downloads.Count} item";
 
     public void AddPlaceholder(string url)
     {
