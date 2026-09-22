@@ -47,7 +47,6 @@ public sealed class YtDlpDownloader
         Add(psi, "--trim-filenames", "180");
         Add(psi, "--continue");
         Add(psi, "--newline");
-        Add(psi, "--progress");
         Add(psi, "--no-colors");
         Add(psi, "--no-update");
         Add(psi, "--no-remote-components");
@@ -62,6 +61,8 @@ public sealed class YtDlpDownloader
         Add(psi, "--output", outputTemplate);
         Add(psi, "--print", "before_dl:__DA_TITLE__%(title)s");
         Add(psi, "--print", "after_move:__DA_FILE__%(filepath)s");
+        // --print dapat mengaktifkan quiet mode; letakkan --progress setelahnya.
+        Add(psi, "--progress");
 
         if (speedLimitBytesPerSecond > 0)
             Add(psi, "--limit-rate", speedLimitBytesPerSecond.ToString(CultureInfo.InvariantCulture));
