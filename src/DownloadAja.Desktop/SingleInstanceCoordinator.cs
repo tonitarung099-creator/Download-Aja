@@ -1,3 +1,4 @@
+using System.IO;
 using System.IO.Pipes;
 using System.Text;
 
@@ -18,7 +19,7 @@ public sealed class SingleInstanceCoordinator : IAsyncDisposable
 
     public SingleInstanceCoordinator()
     {
-        _mutex = new Mutex(initiallyOwned: true, MutexName, out var createdNew);
+        _mutex = new Mutex(initiallyOwned: false, MutexName, out var createdNew);
         IsPrimary = createdNew;
 
         if (IsPrimary)
@@ -73,17 +74,6 @@ public sealed class SingleInstanceCoordinator : IAsyncDisposable
         }
 
         _cts.Dispose();
-
-        if (IsPrimary)
-        {
-            try
-            {
-                _mutex.ReleaseMutex();
-            }
-            catch (ApplicationException)
-            {
-            }
-        }
 
         _mutex.Dispose();
     }
