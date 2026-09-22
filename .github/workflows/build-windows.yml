@@ -18,6 +18,13 @@ jobs:
       - name: Run core smoke tests
         run: dotnet run --project tests/DownloadAja.SmokeTests/DownloadAja.SmokeTests.csproj -c Release
 
+      - name: Validate Chrome extension JavaScript
+        shell: pwsh
+        run: |
+          node --check browser-extension/chrome/service_worker.js
+          node --check browser-extension/chrome/popup.js
+          node --check browser-extension/chrome/options.js
+
       - name: Build desktop
         run: dotnet build src/DownloadAja.Desktop/DownloadAja.Desktop.csproj -c Release
 
