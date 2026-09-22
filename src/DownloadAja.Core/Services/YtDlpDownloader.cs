@@ -18,6 +18,9 @@ public sealed class YtDlpDownloader
         var deno = Path.Combine(AppContext.BaseDirectory, "tools", "deno", "deno.exe");
         var ffmpegDirectory = Path.Combine(AppContext.BaseDirectory, "tools", "ffmpeg");
         var ffmpeg = Path.Combine(ffmpegDirectory, "ffmpeg.exe");
+        var dataDirectory = Path.Combine(AppContext.BaseDirectory, "data");
+        var ytDlpCache = Path.Combine(dataDirectory, "yt-dlp-cache");
+        var denoCache = Path.Combine(dataDirectory, "deno-cache");
 
         if (!File.Exists(ytDlp))
             throw new FileNotFoundException("yt-dlp tidak ditemukan. Gunakan build portable terbaru.", ytDlp);
@@ -54,6 +57,9 @@ public sealed class YtDlpDownloader
         Add(psi, "--no-plugin-dirs");
         Add(psi, "--no-cookies-from-browser");
         Add(psi, "--cache-dir", ytDlpCache);
+        Add(psi, "--ignore-config");
+        Add(psi, "--no-plugin-dirs");
+        Add(psi, "--cache-dir", ytDlpCache);
         Add(psi, "--no-playlist");
         Add(psi, "--windows-filenames");
         Add(psi, "--trim-filenames", "180");
@@ -84,6 +90,10 @@ public sealed class YtDlpDownloader
 
         if (!string.IsNullOrWhiteSpace(context?.Referer))
             Add(psi, "--referer", SanitizeHeaderValue(context.Referer, 4096));
+
+        // Paksa cache/runtime tetap di folder portable, bukan profil Windows pengguna.
+        psi.Environment["DENO_DIR"] = denoCache;
+        psi.Environment["NO_COLOR"] = "1";
 
         // Cookie sesi browser sengaja tidak diteruskan ke command line yt-dlp.
         // Tahap awal YouTube dibatasi pada media publik/non-DRM.
