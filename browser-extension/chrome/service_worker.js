@@ -11,7 +11,18 @@ chrome.runtime.onInstalled.addListener(async () => {
   chrome.contextMenus.create({
     id: "downloadaja-link",
     title: "Download dengan Download Aja",
-    contexts: ["page", "link", "video", "audio"]
+    contexts: ["link", "video", "audio"]
+  });
+
+  chrome.contextMenus.create({
+    id: "downloadaja-youtube-page",
+    title: "Download video YouTube dengan Download Aja",
+    contexts: ["page"],
+    documentUrlPatterns: [
+      "*://*.youtube.com/*",
+      "*://youtu.be/*",
+      "*://*.youtube-nocookie.com/*"
+    ]
   });
 
   const current = await chrome.storage.local.get([
@@ -302,10 +313,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-  let url = info.linkUrl || info.srcUrl || "";
+  let url = "";
 
-  if (!url && info.pageUrl && isYouTubeUrl(info.pageUrl))
-    url = info.pageUrl;
+  if (info.menuItemId === "downloadaja-youtube-page") {
+    if (info.pageUrl && isYouTubeUrl(info.pageUrl))
+      url = info.pageUrl;
+  } else if (info.menuItemId === "downloadaja-link") {
+    url = info.linkUrl || info.srcUrl || "";
+  }
 
   if (!url)
     return;
