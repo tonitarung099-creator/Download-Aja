@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Threading;
 using DownloadAja.Core.Models;
 using DownloadAja.Desktop.ViewModels;
@@ -12,6 +13,7 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _refreshTimer;
     private bool _refreshInProgress;
     private bool _closing;
+    private bool _changingFilter;
 
     public MainWindow()
     {
@@ -38,6 +40,9 @@ public partial class MainWindow : Window
             DownloadsGrid.SelectedItem = item;
             DownloadsGrid.ScrollIntoView(item);
             EngineStatusText.Text = "Siap";
+
+            if (WindowState == WindowState.Minimized)
+                WindowState = WindowState.Normal;
             Activate();
         }
         catch (Exception ex)
@@ -112,6 +117,33 @@ public partial class MainWindow : Window
     {
         if (DownloadsGrid.SelectedItem is not DownloadItem item) return;
         await RunItemActionAsync(() => _viewModel.RemoveAsync(item), "Menghapus dari daftar...");
+    }
+
+    private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+        => _viewModel.SetSearchText(SearchBox.Text);
+
+    private void StatusFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_changingFilter || StatusFilterList.SelectedItem is not ListBoxItem selected)
+            return;
+
+        _changingFilter = true;
+        CategoryFilterList.SelectedIndex = -1;
+        _changingFilter = false;
+
+        _viewModel.SetFilter(selected.Tag?.ToString());
+    }
+
+    private void CategoryFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_changingFilter || CategoryFilterList.SelectedItem is not ListBoxItem selected)
+            return;
+
+        _changingFilter = true;
+        StatusFilterList.SelectedIndex = -1;
+        _changingFilter = false;
+
+        _viewModel.SetFilter(selected.Tag?.ToString());
     }
 
     private async void RefreshTimer_Tick(object? sender, EventArgs e)

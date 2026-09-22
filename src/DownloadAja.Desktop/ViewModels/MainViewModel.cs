@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Text.Json;
+using System.Windows.Data;
 using DownloadAja.Core.Models;
 using DownloadAja.Core.Services;
 
@@ -9,15 +10,46 @@ namespace DownloadAja.Desktop.ViewModels;
 public sealed class MainViewModel : IAsyncDisposable
 {
     private readonly Aria2EngineHost _engine = new();
+    private readonly DownloadHistoryStore _historyStore;
+    private DateTimeOffset _lastAutoSave = DateTimeOffset.MinValue;
+    private string _searchText = "";
+    private string _filterKey = "Semua";
 
     public ObservableCollection<DownloadItem> Downloads { get; } = new();
-
+    public ICollectionView DownloadsView { get; }
     public string DownloadDirectory { get; } = GetDefaultDownloadDirectory();
+
+    public MainViewModel()
+    {
+        var statePath = Path.Combine(AppContext.BaseDirectory, "data", "downloads.json");
+        _historyStore = new DownloadHistoryStore(statePath);
+
+        DownloadsView = CollectionViewSource.GetDefaultView(Downloads);
+        DownloadsView.Filter = MatchesFilter;
+    }
 
     public async Task InitializeAsync(CancellationToken ct = default)
     {
         Directory.CreateDirectory(DownloadDirectory);
+
+        var restored = await _historyStore.LoadAsync(DownloadDirectory, ct);
+        foreach (var item in restored)
+            Downloads.Add(item);
+
+        DownloadsView.Refresh();
         _ = await _engine.EnsureStartedAsync(ct);
+    }
+
+    public void SetSearchText(string? value)
+    {
+        _searchText = value?.Trim() ?? "";
+        DownloadsView.Refresh();
+    }
+
+    public void SetFilter(string? filterKey)
+    {
+        _filterKey = string.IsNullOrWhiteSpace(filterKey) ? "Semua" : filterKey;
+        DownloadsView.Refresh();
     }
 
     public async Task<DownloadItem> AddAndStartAsync(string url, CancellationToken ct = default)
@@ -26,26 +58,31 @@ public sealed class MainViewModel : IAsyncDisposable
         {
             Url = url,
             Name = TryGetFileName(url),
-            SavePath = DownloadDirectory,
+            DirectoryPath = DownloadDirectory,
             Status = DownloadStatus.Menunggu
         };
 
-        Downloads.Add(item);
+        Downloads.Insert(0, item);
 
         try
         {
             await StartAsync(item, ct);
+            await SaveStateAsync(ct);
             return item;
         }
         catch
         {
             item.Status = DownloadStatus.Gagal;
+            await SaveStateAsync(ct);
             throw;
         }
     }
 
     public async Task StartAsync(DownloadItem item, CancellationToken ct = default)
     {
+        if (item.Status == DownloadStatus.Selesai)
+            return;
+
         var client = await _engine.EnsureStartedAsync(ct);
         item.ErrorMessage = null;
 
@@ -53,14 +90,34 @@ public sealed class MainViewModel : IAsyncDisposable
         {
             await client.UnpauseAsync(item.Gid, ct);
             item.Status = DownloadStatus.Mengunduh;
+            DownloadsView.Refresh();
+            await SaveStateAsync(ct);
             return;
         }
 
         if (item.Status == DownloadStatus.Mengunduh)
             return;
 
-        item.Gid = await client.AddUriAsync(item.Url, item.SavePath, connections: 8, ct);
+        var directory = string.IsNullOrWhiteSpace(item.DirectoryPath)
+            ? DownloadDirectory
+            : item.DirectoryPath;
+
+        Directory.CreateDirectory(directory);
+
+        var existingFileName = string.IsNullOrWhiteSpace(item.FilePath)
+            ? null
+            : Path.GetFileName(item.FilePath);
+
+        item.Gid = await client.AddUriAsync(
+            item.Url,
+            directory,
+            connections: 8,
+            outputFileName: existingFileName,
+            ct: ct);
+
         item.Status = DownloadStatus.Mengunduh;
+        DownloadsView.Refresh();
+        await SaveStateAsync(ct);
     }
 
     public async Task PauseAsync(DownloadItem item, CancellationToken ct = default)
@@ -72,6 +129,8 @@ public sealed class MainViewModel : IAsyncDisposable
         await client.PauseAsync(item.Gid, ct);
         item.Status = DownloadStatus.Dijeda;
         item.SpeedBytesPerSecond = 0;
+        DownloadsView.Refresh();
+        await SaveStateAsync(ct);
     }
 
     public async Task StopAsync(DownloadItem item, CancellationToken ct = default)
@@ -92,6 +151,8 @@ public sealed class MainViewModel : IAsyncDisposable
         item.Gid = null;
         item.SpeedBytesPerSecond = 0;
         item.Status = DownloadStatus.Dibatalkan;
+        DownloadsView.Refresh();
+        await SaveStateAsync(ct);
     }
 
     public async Task RemoveAsync(DownloadItem item, CancellationToken ct = default)
@@ -111,6 +172,8 @@ public sealed class MainViewModel : IAsyncDisposable
         }
 
         Downloads.Remove(item);
+        DownloadsView.Refresh();
+        await SaveStateAsync(ct);
     }
 
     public async Task RefreshAsync(CancellationToken ct = default)
@@ -136,6 +199,11 @@ public sealed class MainViewModel : IAsyncDisposable
                 item.SpeedBytesPerSecond = 0;
             }
         }
+
+        DownloadsView.Refresh();
+
+        if (DateTimeOffset.Now - _lastAutoSave >= TimeSpan.FromSeconds(5))
+            await SaveStateAsync(ct);
     }
 
     public long TotalSpeed => Downloads
@@ -144,8 +212,48 @@ public sealed class MainViewModel : IAsyncDisposable
 
     public int ActiveCount => Downloads.Count(x => x.Status == DownloadStatus.Mengunduh);
 
+    public async Task SaveStateAsync(CancellationToken ct = default)
+    {
+        await _historyStore.SaveAsync(Downloads, ct);
+        _lastAutoSave = DateTimeOffset.Now;
+    }
+
     public async ValueTask DisposeAsync()
-        => await _engine.DisposeAsync();
+    {
+        try
+        {
+            await SaveStateAsync();
+        }
+        finally
+        {
+            await _engine.DisposeAsync();
+        }
+    }
+
+    private bool MatchesFilter(object value)
+    {
+        if (value is not DownloadItem item)
+            return false;
+
+        var filterMatch = _filterKey switch
+        {
+            "Mengunduh" => item.Status == DownloadStatus.Mengunduh,
+            "Selesai" => item.Status == DownloadStatus.Selesai,
+            "Belum selesai" => item.Status != DownloadStatus.Selesai,
+            "Video" or "Audio" or "Dokumen" or "Program" or "Arsip" or "Lainnya" => item.Category == _filterKey,
+            _ => true
+        };
+
+        if (!filterMatch)
+            return false;
+
+        if (string.IsNullOrWhiteSpace(_searchText))
+            return true;
+
+        return item.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase)
+            || item.Url.Contains(_searchText, StringComparison.OrdinalIgnoreCase)
+            || item.Category.Contains(_searchText, StringComparison.OrdinalIgnoreCase);
+    }
 
     private static void ApplyStatus(DownloadItem item, JsonElement status)
     {
@@ -163,7 +271,10 @@ public sealed class MainViewModel : IAsyncDisposable
                 var path = pathElement.GetString();
                 if (!string.IsNullOrWhiteSpace(path))
                 {
-                    item.SavePath = path;
+                    item.FilePath = path;
+                    var directory = Path.GetDirectoryName(path);
+                    if (!string.IsNullOrWhiteSpace(directory))
+                        item.DirectoryPath = directory;
                     item.Name = Path.GetFileName(path);
                 }
             }

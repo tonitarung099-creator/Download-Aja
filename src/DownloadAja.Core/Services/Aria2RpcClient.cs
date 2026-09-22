@@ -16,7 +16,12 @@ public sealed class Aria2RpcClient
         _secret = secret;
     }
 
-    public async Task<string> AddUriAsync(string url, string directory, int connections = 8, CancellationToken ct = default)
+    public async Task<string> AddUriAsync(
+        string url,
+        string directory,
+        int connections = 8,
+        string? outputFileName = null,
+        CancellationToken ct = default)
     {
         var safeConnections = Math.Clamp(connections, 1, 16);
         var options = new Dictionary<string, string>
@@ -30,6 +35,9 @@ public sealed class Aria2RpcClient
             ["auto-file-renaming"] = "false",
             ["allow-overwrite"] = "false"
         };
+
+        if (!string.IsNullOrWhiteSpace(outputFileName))
+            options["out"] = outputFileName;
 
         var result = await CallAsync("aria2.addUri", WithToken([new[] { url }, options]), ct);
         return result.GetString() ?? throw new InvalidOperationException("aria2 tidak mengembalikan GID.");

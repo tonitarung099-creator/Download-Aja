@@ -50,31 +50,41 @@
             </Grid.ColumnDefinitions>
 
             <Border Grid.Column="0" Background="{StaticResource SidebarBrush}" BorderBrush="#E2E8F0" BorderThickness="0,0,1,0">
-                <StackPanel Margin="12">
-                    <TextBlock Text="DOWNLOAD" FontSize="11" Foreground="#64748B" FontWeight="Bold" Margin="8,8,8,5"/>
-                    <ListBox SelectedIndex="0" BorderThickness="0" Background="Transparent">
-                        <ListBoxItem Padding="10,8">Semua</ListBoxItem>
-                        <ListBoxItem Padding="10,8">Mengunduh</ListBoxItem>
-                        <ListBoxItem Padding="10,8">Selesai</ListBoxItem>
-                        <ListBoxItem Padding="10,8">Belum selesai</ListBoxItem>
-                    </ListBox>
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="12">
+                        <TextBlock Text="DOWNLOAD" FontSize="11" Foreground="#64748B" FontWeight="Bold" Margin="8,8,8,5"/>
+                        <ListBox x:Name="StatusFilterList"
+                                 SelectedIndex="0"
+                                 SelectionChanged="StatusFilter_SelectionChanged"
+                                 BorderThickness="0"
+                                 Background="Transparent">
+                            <ListBoxItem Tag="Semua" Padding="10,8">Semua</ListBoxItem>
+                            <ListBoxItem Tag="Mengunduh" Padding="10,8">Mengunduh</ListBoxItem>
+                            <ListBoxItem Tag="Selesai" Padding="10,8">Selesai</ListBoxItem>
+                            <ListBoxItem Tag="Belum selesai" Padding="10,8">Belum selesai</ListBoxItem>
+                        </ListBox>
 
-                    <TextBlock Text="KATEGORI" FontSize="11" Foreground="#64748B" FontWeight="Bold" Margin="8,20,8,5"/>
-                    <ListBox BorderThickness="0" Background="Transparent">
-                        <ListBoxItem Padding="10,8">Video</ListBoxItem>
-                        <ListBoxItem Padding="10,8">Audio</ListBoxItem>
-                        <ListBoxItem Padding="10,8">Dokumen</ListBoxItem>
-                        <ListBoxItem Padding="10,8">Program</ListBoxItem>
-                        <ListBoxItem Padding="10,8">Arsip</ListBoxItem>
-                    </ListBox>
+                        <TextBlock Text="KATEGORI" FontSize="11" Foreground="#64748B" FontWeight="Bold" Margin="8,20,8,5"/>
+                        <ListBox x:Name="CategoryFilterList"
+                                 SelectionChanged="CategoryFilter_SelectionChanged"
+                                 BorderThickness="0"
+                                 Background="Transparent">
+                            <ListBoxItem Tag="Video" Padding="10,8">Video</ListBoxItem>
+                            <ListBoxItem Tag="Audio" Padding="10,8">Audio</ListBoxItem>
+                            <ListBoxItem Tag="Dokumen" Padding="10,8">Dokumen</ListBoxItem>
+                            <ListBoxItem Tag="Program" Padding="10,8">Program</ListBoxItem>
+                            <ListBoxItem Tag="Arsip" Padding="10,8">Arsip</ListBoxItem>
+                            <ListBoxItem Tag="Lainnya" Padding="10,8">Lainnya</ListBoxItem>
+                        </ListBox>
 
-                    <TextBlock Text="ALAT" FontSize="11" Foreground="#64748B" FontWeight="Bold" Margin="8,20,8,5"/>
-                    <ListBox BorderThickness="0" Background="Transparent">
-                        <ListBoxItem Padding="10,8">Antrean</ListBoxItem>
-                        <ListBoxItem Padding="10,8">Scheduler</ListBoxItem>
-                        <ListBoxItem Padding="10,8">Browser</ListBoxItem>
-                    </ListBox>
-                </StackPanel>
+                        <TextBlock Text="ALAT" FontSize="11" Foreground="#64748B" FontWeight="Bold" Margin="8,20,8,5"/>
+                        <ListBox BorderThickness="0" Background="Transparent">
+                            <ListBoxItem Padding="10,8" IsEnabled="False">Antrean</ListBoxItem>
+                            <ListBoxItem Padding="10,8" IsEnabled="False">Scheduler</ListBoxItem>
+                            <ListBoxItem Padding="10,8" IsEnabled="False">Browser</ListBoxItem>
+                        </ListBox>
+                    </StackPanel>
+                </ScrollViewer>
             </Border>
 
             <Grid Grid.Column="1">
@@ -86,21 +96,26 @@
                 <Grid Margin="14,12,14,8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="260"/>
+                        <ColumnDefinition Width="280"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel>
                         <TextBlock Text="Daftar Download" FontSize="22" FontWeight="SemiBold" Foreground="#0F172A"/>
                         <TextBlock Text="{Binding DownloadDirectory, StringFormat=Lokasi default: {0}}"
                                    Foreground="#64748B" FontSize="11" Margin="0,3,0,0"/>
                     </StackPanel>
-                    <TextBox Grid.Column="1" Height="34" VerticalContentAlignment="Center" Padding="10,0"
-                             ToolTip="Pencarian akan diaktifkan pada tahap berikutnya"
-                             IsEnabled="False"/>
+
+                    <TextBox x:Name="SearchBox"
+                             Grid.Column="1"
+                             Height="34"
+                             VerticalContentAlignment="Center"
+                             Padding="10,0"
+                             TextChanged="SearchBox_TextChanged"
+                             ToolTip="Cari nama file, URL, atau kategori"/>
                 </Grid>
 
                 <DataGrid x:Name="DownloadsGrid"
                           Grid.Row="1" Margin="14,0,14,14"
-                          ItemsSource="{Binding Downloads}"
+                          ItemsSource="{Binding DownloadsView}"
                           AutoGenerateColumns="False"
                           IsReadOnly="True"
                           CanUserAddRows="False"
@@ -110,6 +125,7 @@
                           BorderBrush="#E2E8F0">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Nama" Binding="{Binding Name}" Width="2*"/>
+                        <DataGridTextColumn Header="Kategori" Binding="{Binding Category}" Width="90"/>
                         <DataGridTextColumn Header="Ukuran" Binding="{Binding SizeText}" Width="155"/>
                         <DataGridTextColumn Header="Progres" Binding="{Binding ProgressText}" Width="75"/>
                         <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="105"/>

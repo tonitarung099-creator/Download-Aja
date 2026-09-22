@@ -7,7 +7,8 @@ public sealed class DownloadItem : INotifyPropertyChanged
 {
     private string _name = "";
     private string _url = "";
-    private string _savePath = "";
+    private string _directoryPath = "";
+    private string? _filePath;
     private string? _gid;
     private string? _errorMessage;
     private long _totalBytes;
@@ -16,11 +17,33 @@ public sealed class DownloadItem : INotifyPropertyChanged
     private DownloadStatus _status = DownloadStatus.Menunggu;
 
     public string Id { get; init; } = Guid.NewGuid().ToString("N");
-    public string Name { get => _name; set => Set(ref _name, value); }
-    public string Url { get => _url; set => Set(ref _url, value); }
-    public string SavePath { get => _savePath; set => Set(ref _savePath, value); }
+
+    public string Name
+    {
+        get => _name;
+        set
+        {
+            if (!Set(ref _name, value)) return;
+            OnPropertyChanged(nameof(Category));
+        }
+    }
+
+    public string Url
+    {
+        get => _url;
+        set
+        {
+            if (!Set(ref _url, value)) return;
+            OnPropertyChanged(nameof(Category));
+        }
+    }
+
+    public string DirectoryPath { get => _directoryPath; set => Set(ref _directoryPath, value); }
+    public string? FilePath { get => _filePath; set => Set(ref _filePath, value); }
     public string? Gid { get => _gid; set => Set(ref _gid, value); }
     public string? ErrorMessage { get => _errorMessage; set => Set(ref _errorMessage, value); }
+
+    public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.Now;
 
     public long TotalBytes
     {
@@ -55,6 +78,7 @@ public sealed class DownloadItem : INotifyPropertyChanged
 
     public DownloadStatus Status { get => _status; set => Set(ref _status, value); }
 
+    public string Category => ClassifyCategory(Name, Url);
     public double ProgressPercent => TotalBytes <= 0 ? 0 : Math.Clamp(CompletedBytes * 100d / TotalBytes, 0, 100);
     public string ProgressText => $"{ProgressPercent:F0}%";
     public string SizeText => TotalBytes <= 0 ? "—" : $"{FormatBytes(CompletedBytes)} / {FormatBytes(TotalBytes)}";
@@ -93,6 +117,22 @@ public sealed class DownloadItem : INotifyPropertyChanged
 
     private void OnPropertyChanged([CallerMemberName] string? name = null)
         => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+
+    private static string ClassifyCategory(string name, string url)
+    {
+        var source = !string.IsNullOrWhiteSpace(name) ? name : url;
+        var extension = Path.GetExtension(source.Split('?', '#')[0]).ToLowerInvariant();
+
+        return extension switch
+        {
+            ".mp4" or ".mkv" or ".avi" or ".mov" or ".wmv" or ".webm" or ".m4v" or ".ts" => "Video",
+            ".mp3" or ".wav" or ".flac" or ".aac" or ".m4a" or ".ogg" or ".opus" or ".wma" => "Audio",
+            ".pdf" or ".doc" or ".docx" or ".xls" or ".xlsx" or ".ppt" or ".pptx" or ".txt" or ".csv" or ".rtf" or ".odt" => "Dokumen",
+            ".exe" or ".msi" or ".msix" or ".appx" or ".apk" or ".deb" or ".rpm" => "Program",
+            ".zip" or ".rar" or ".7z" or ".tar" or ".gz" or ".bz2" or ".xz" or ".iso" => "Arsip",
+            _ => "Lainnya"
+        };
+    }
 
     private static string FormatBytes(long bytes)
     {
