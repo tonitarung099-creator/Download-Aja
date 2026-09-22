@@ -34,6 +34,26 @@ public partial class AddUrlWindow : Window
         };
     }
 
+    private void UrlBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+    {
+        YouTubeInfo.Visibility = IsYouTubeUrl(UrlBox.Text)
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+    }
+
+    private static bool IsYouTubeUrl(string? value)
+    {
+        if (!Uri.TryCreate(value?.Trim(), UriKind.Absolute, out var uri))
+            return false;
+
+        var host = uri.Host.ToLowerInvariant();
+        return host == "youtu.be"
+            || host == "youtube.com"
+            || host.EndsWith(".youtube.com", StringComparison.Ordinal)
+            || host == "youtube-nocookie.com"
+            || host.EndsWith(".youtube-nocookie.com", StringComparison.Ordinal);
+    }
+
     private void BrowseFolder_Click(object sender, RoutedEventArgs e)
     {
         var dialog = new OpenFolderDialog
