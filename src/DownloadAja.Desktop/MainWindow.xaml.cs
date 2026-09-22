@@ -543,6 +543,17 @@ public partial class MainWindow : Window
         }
     }
 
+    private void PropertiesMenu_Click(object sender, RoutedEventArgs e)
+    {
+        if (DownloadsGrid.SelectedItem is not DownloadItem item)
+            return;
+
+        new DownloadDetailsWindow(item)
+        {
+            Owner = this
+        }.ShowDialog();
+    }
+
     private async void StartMenu_Click(object sender, RoutedEventArgs e)
     {
         if (DownloadsGrid.SelectedItem is not DownloadItem item)
