@@ -32,9 +32,9 @@ public static class BrowserIntegrationService
     public static string HostManifestPath =>
         Path.Combine(AppContext.BaseDirectory, "data", HostName + ".json");
 
-    public static void RegisterChromiumBrowsers(string extensionId)
+    public static void RegisterChromiumBrowsers(string extensionIdsText)
     {
-        extensionId = ValidateExtensionId(extensionId);
+        var extensionIds = ParseExtensionIds(extensionIdsText);
 
         if (!Directory.Exists(ExtensionDirectory))
             throw new DirectoryNotFoundException($"Folder extension tidak ditemukan: {ExtensionDirectory}");
@@ -50,7 +50,9 @@ public static class BrowserIntegrationService
             description = "Download Aja Chromium Native Messaging Bridge",
             path = Path.GetFullPath(BridgePath),
             type = "stdio",
-            allowed_origins = new[] { $"chrome-extension://{extensionId}/" }
+            allowed_origins = extensionIds
+                .Select(id => $"chrome-extension://{id}/")
+                .ToArray()
         };
 
         File.WriteAllText(
@@ -91,33 +93,38 @@ public static class BrowserIntegrationService
         }
     }
 
-    public static string? GetRegisteredExtensionId()
+    public static IReadOnlyList<string> GetRegisteredExtensionIds()
     {
         try
         {
             if (!File.Exists(HostManifestPath))
-                return null;
+                return [];
 
             using var document = JsonDocument.Parse(File.ReadAllText(HostManifestPath));
             if (!document.RootElement.TryGetProperty("allowed_origins", out var origins) ||
-                origins.ValueKind != JsonValueKind.Array ||
-                origins.GetArrayLength() == 0)
-                return null;
+                origins.ValueKind != JsonValueKind.Array)
+                return [];
 
-            var origin = origins[0].GetString();
             const string prefix = "chrome-extension://";
-            if (string.IsNullOrWhiteSpace(origin) ||
-                !origin.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                return null;
-
-            var value = origin[prefix.Length..].TrimEnd('/');
-            return value.Length == 32 ? value : null;
+            return origins
+                .EnumerateArray()
+                .Where(value => value.ValueKind == JsonValueKind.String)
+                .Select(value => value.GetString())
+                .Where(value => !string.IsNullOrWhiteSpace(value) &&
+                                value.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                .Select(value => value![prefix.Length..].TrimEnd('/'))
+                .Where(IsValidExtensionId)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
         }
         catch
         {
-            return null;
+            return [];
         }
     }
+
+    public static string? GetRegisteredExtensionId()
+        => GetRegisteredExtensionIds().FirstOrDefault();
 
     public static bool IsAnyChromiumBrowserRegistered()
         => NativeMessagingRegistryRoots.Any(IsRegisteredAtRoot)
@@ -189,14 +196,26 @@ public static class BrowserIntegrationService
             && File.Exists(value);
     }
 
-    private static string ValidateExtensionId(string extensionId)
+    private static string[] ParseExtensionIds(string text)
     {
-        var value = extensionId.Trim().ToLowerInvariant();
+        var values = text
+            .Split([',', ';', '\r', '\n', '\t', ' '],
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(value => value.ToLowerInvariant())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
 
-        if (value.Length != 32 || value.Any(ch => ch < 'a' || ch > 'p'))
+        if (values.Length == 0)
+            throw new ArgumentException("Masukkan minimal satu ID extension.");
+
+        var invalid = values.FirstOrDefault(value => !IsValidExtensionId(value));
+        if (invalid is not null)
             throw new ArgumentException(
-                "ID extension harus 32 karakter (huruf a sampai p). Salin ID dari halaman extensions browser.");
+                $"ID extension tidak valid: {invalid}. ID harus 32 karakter (huruf a sampai p).");
 
-        return value;
+        return values;
     }
+
+    private static bool IsValidExtensionId(string value)
+        => value.Length == 32 && value.All(ch => ch >= 'a' && ch <= 'p');
 }

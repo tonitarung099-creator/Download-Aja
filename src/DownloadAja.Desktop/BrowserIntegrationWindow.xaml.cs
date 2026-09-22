@@ -11,7 +11,7 @@ public partial class BrowserIntegrationWindow : Window
     {
         InitializeComponent();
         ExtensionPathBox.Text = BrowserIntegrationService.ExtensionDirectory;
-        ExtensionIdBox.Text = BrowserIntegrationService.GetRegisteredExtensionId() ?? "";
+        ExtensionIdBox.Text = string.Join(Environment.NewLine, BrowserIntegrationService.GetRegisteredExtensionIds());
         RefreshStatus();
     }
 
@@ -102,14 +102,18 @@ public partial class BrowserIntegrationWindow : Window
 
     private void RefreshStatus()
     {
-        var extensionId = BrowserIntegrationService.GetRegisteredExtensionId();
+        var extensionIds = BrowserIntegrationService.GetRegisteredExtensionIds();
         var status = BrowserIntegrationService.GetRegistrationStatus();
 
         var details = string.Join(" • ", status.Select(pair =>
             $"{pair.Key}: {(pair.Value ? "terdaftar" : "belum")}"));
 
+        var idText = extensionIds.Count == 0
+            ? "tanpa ID tersimpan"
+            : $"{extensionIds.Count} ID extension";
+
         StatusText.Text = BrowserIntegrationService.IsAnyChromiumBrowserRegistered()
-            ? $"✓ Integrasi aktif{(string.IsNullOrWhiteSpace(extensionId) ? "." : $" untuk extension {extensionId}.")}\n{details}"
+            ? $"✓ Integrasi aktif untuk {idText}.\n{details}"
             : $"Integrasi Native Messaging belum terdaftar.\n{details}";
     }
 }

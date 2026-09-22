@@ -40,6 +40,7 @@
 - [x] HLS/DASH non-DRM melalui FFmpeg
 - [ ] Pause/resume khusus stream FFmpeg
 - [x] Dukungan wizard Chrome/Edge/Brave/Vivaldi dengan registry Chromium fallback
+- [x] Beberapa ID extension sekaligus untuk browser berbeda
 - [x] Pengecualian interception per domain
 - [ ] Aturan situs lanjutan (per-domain cookie/media behavior)
 

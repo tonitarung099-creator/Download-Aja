@@ -167,7 +167,7 @@ public partial class DiagnosticsWindow : Window
         var logsDir = Path.Combine(dataDir, "logs");
 
         var status = BrowserIntegrationService.GetRegistrationStatus();
-        var extensionId = BrowserIntegrationService.GetRegisteredExtensionId();
+        var extensionIds = BrowserIntegrationService.GetRegisteredExtensionIds();
 
         var builder = new StringBuilder();
         builder.AppendLine($"Versi: {Assembly.GetExecutingAssembly().GetName().Version}");
@@ -202,7 +202,7 @@ public partial class DiagnosticsWindow : Window
         builder.AppendLine($"Browser bridge: {(File.Exists(bridge) ? "OK" : "TIDAK DITEMUKAN")} — {bridge}");
         builder.AppendLine($"Extension folder: {(Directory.Exists(extension) ? "OK" : "TIDAK DITEMUKAN")} — {extension}");
         builder.AppendLine();
-        builder.AppendLine($"Extension ID: {extensionId ?? "belum terdaftar"}");
+        builder.AppendLine($"Extension ID: {(extensionIds.Count == 0 ? "belum terdaftar" : string.Join(", ", extensionIds))}");
 
         foreach (var pair in status)
             builder.AppendLine($"Native Messaging {pair.Key}: {(pair.Value ? "terdaftar" : "belum")}");

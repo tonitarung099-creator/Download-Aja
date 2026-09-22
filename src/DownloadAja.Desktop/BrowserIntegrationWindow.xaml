@@ -56,9 +56,10 @@
                 <StackPanel>
                     <TextBlock Text="2. Masukkan ID extension" FontWeight="SemiBold" FontSize="15"/>
                     <TextBlock Margin="0,4,0,8" Foreground="#64748B" TextWrapping="Wrap"
-                               Text="Salin ID 32 karakter dari kartu extension Download Aja pada browser. ID yang sama biasanya dipakai untuk folder extension yang sama."/>
+                               Text="Masukkan ID dari semua browser yang dipakai. Pisahkan dengan koma, spasi, atau baris baru. Satu ID saja juga boleh."/>
                     <TextBox x:Name="ExtensionIdBox" Width="430" HorizontalAlignment="Left"
-                             Height="32" MaxLength="32" VerticalContentAlignment="Center" Padding="8,0"/>
+                             Height="70" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"
+                             TextWrapping="Wrap" Padding="8"/>
                 </StackPanel>
                 <Button Grid.Column="1" VerticalAlignment="Bottom" Margin="14,0,0,0"
                         Click="Register_Click" FontWeight="SemiBold">
@@ -75,7 +76,7 @@
             <StackPanel>
                 <TextBlock FontWeight="SemiBold" Text="Catatan kompatibilitas"/>
                 <TextBlock Margin="0,5,0,0" Foreground="#64748B" TextWrapping="Wrap"
-                           Text="Chrome didaftarkan pada registry Google Chrome, Edge pada registry Microsoft Edge, dan juga registry Chromium sebagai fallback untuk browser Chromium lain. Jika Brave/Vivaldi belum terhubung, restart browser setelah pendaftaran."/>
+                           Text="Chrome didaftarkan pada registry Google Chrome, Edge pada registry Microsoft Edge, dan juga registry Chromium sebagai fallback. Karena ID extension unpacked dapat berbeda antar browser, masukkan semua ID yang digunakan sebelum mendaftar."/>
             </StackPanel>
         </Border>
 
