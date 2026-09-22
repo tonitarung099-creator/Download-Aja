@@ -8,7 +8,7 @@
 - Download HTTP/HTTPS: aria2 1.37.0 melalui JSON-RPC lokal
 - HLS/DASH non-DRM: FFmpeg 8.1.3 yang dibundel di portable
 - YouTube publik/non-DRM: yt-dlp 2026.08.19 + Deno 2.9.7 + FFmpeg
-- Integrasi Chrome: Manifest V3 + Native Messaging
+- Integrasi browser Chromium: Chrome / Edge / Brave / Vivaldi, Manifest V3 + Native Messaging
 - Distribusi development: portable folder multi-file dalam ZIP
 - Tidak membutuhkan installer atau hak Administrator untuk menjalankan aplikasi
 
@@ -41,17 +41,19 @@
 3. Jalankan `DownloadAja.exe`.
 4. Jangan memindahkan hanya file EXE; folder `tools`, `browser-bridge`, dan resource lain harus tetap bersama aplikasi.
 
-## Menghubungkan Chrome
+## Menghubungkan browser
 
 1. Di aplikasi klik **Browser**.
-2. Klik **Buka chrome://extensions**.
-3. Aktifkan **Mode developer**.
-4. Klik **Load unpacked / Muat yang belum dikemas** dan pilih folder extension yang ditampilkan aplikasi.
-5. Salin ID extension 32 karakter dari Chrome.
-6. Tempel ID tersebut ke wizard Download Aja lalu klik **Daftarkan Integrasi**.
-7. Jika perlu, restart Chrome.
+2. Pilih **Chrome, Edge, Brave, atau Vivaldi**.
+3. Klik **Buka Extensions**.
+4. Aktifkan **Mode developer**.
+5. Klik **Load unpacked / Muat yang belum dikemas** lalu pilih folder extension yang ditampilkan aplikasi.
+6. Salin ID extension 32 karakter.
+7. Jika kamu memakai lebih dari satu browser dan ID-nya berbeda, masukkan semua ID ke wizard (boleh dipisahkan koma, spasi, atau baris baru).
+8. Klik **Daftarkan Semua Chromium**.
+9. Restart browser jika koneksi Native Messaging belum langsung aktif.
 
-Pendaftaran Native Messaging memakai registry pengguna Windows (HKCU), jadi tidak membutuhkan hak Administrator.
+Pendaftaran memakai registry pengguna Windows (HKCU), jadi tidak membutuhkan hak Administrator.
 
 ## Struktur repository
 
@@ -73,3 +75,15 @@ Deteksi media ditujukan untuk media langsung, stream HLS/DASH **non-DRM**, dan U
 ## Uji manual
 
 Checklist pengujian Windows tersedia di `docs/TEST_CHECKLIST.md`. Gunakan checklist tersebut saat menguji artifact portable agar bug dapat direproduksi dengan jelas.
+
+
+## Download YouTube
+
+Untuk video YouTube **publik/non-DRM**, kamu bisa:
+
+- paste URL video ke **Tambah URL**, atau
+- buka video di browser lalu klik popup extension → **Download video halaman ini**.
+
+Download Aja memakai `yt-dlp` + Deno + FFmpeg yang sudah berada di folder portable. Tidak perlu memasang Python, Node.js, Deno, atau FFmpeg secara terpisah.
+
+Playlist sengaja dimatikan pada tahap ini; satu URL video menghasilkan satu pekerjaan download. Fitur ini tidak ditujukan untuk melewati DRM, paywall, login, atau kontrol akses.
