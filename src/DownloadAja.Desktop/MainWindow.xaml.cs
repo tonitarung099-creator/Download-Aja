@@ -16,6 +16,8 @@ public partial class MainWindow : Window
     private bool _refreshInProgress;
     private bool _closing;
     private bool _changingFilter;
+    private bool _clipboardDialogOpen;
+    private string? _lastClipboardUrl;
 
     public MainWindow()
     {
@@ -273,7 +275,8 @@ public partial class MainWindow : Window
     {
         var dialog = new SettingsWindow(
             _viewModel.ConnectionsPerDownload,
-            _viewModel.SpeedLimitBytesPerSecond)
+            _viewModel.SpeedLimitBytesPerSecond,
+            _viewModel.ClipboardMonitoringEnabled)
         {
             Owner = this
         };
@@ -285,7 +288,8 @@ public partial class MainWindow : Window
         {
             await _viewModel.UpdateSettingsAsync(
                 dialog.ConnectionsPerDownload,
-                dialog.SpeedLimitBytesPerSecond);
+                dialog.SpeedLimitBytesPerSecond,
+                dialog.ClipboardMonitoringEnabled);
 
             EngineStatusText.Text = $"Pengaturan disimpan — {dialog.ConnectionsPerDownload} koneksi/download";
         }
@@ -337,6 +341,7 @@ public partial class MainWindow : Window
                 EngineStatusText.Text = $"Scheduler menjalankan {scheduledResult.Value} item antrean";
 
             UpdateStatusBar();
+            TryOpenClipboardUrlDialog();
         }
         catch
         {
@@ -345,6 +350,82 @@ public partial class MainWindow : Window
         finally
         {
             _refreshInProgress = false;
+        }
+    }
+
+    private void TryOpenClipboardUrlDialog()
+    {
+        if (!_viewModel.ClipboardMonitoringEnabled || _clipboardDialogOpen)
+            return;
+
+        string text;
+        try
+        {
+            if (!Clipboard.ContainsText())
+                return;
+
+            text = Clipboard.GetText().Trim();
+        }
+        catch
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(text) ||
+            string.Equals(text, _lastClipboardUrl, StringComparison.Ordinal))
+            return;
+
+        if (!Uri.TryCreate(text, UriKind.Absolute, out var uri) ||
+            (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+            return;
+
+        _lastClipboardUrl = text;
+
+        if (_viewModel.Downloads.Any(x =>
+            string.Equals(x.Url, uri.AbsoluteUri, StringComparison.OrdinalIgnoreCase)))
+            return;
+
+        _clipboardDialogOpen = true;
+        try
+        {
+            var dialog = new AddUrlWindow(_viewModel.DownloadDirectory, uri.AbsoluteUri)
+            {
+                Owner = this
+            };
+
+            if (dialog.ShowDialog() != true)
+                return;
+
+            _ = AddFromDialogAsync(dialog);
+        }
+        finally
+        {
+            _clipboardDialogOpen = false;
+        }
+    }
+
+    private async Task AddFromDialogAsync(AddUrlWindow dialog)
+    {
+        try
+        {
+            EngineStatusText.Text = dialog.StartImmediately
+                ? "Menambahkan download..."
+                : "Menambahkan ke antrean...";
+
+            var item = await _viewModel.AddAsync(
+                dialog.DownloadUrl,
+                dialog.DirectoryPath,
+                dialog.StartImmediately);
+
+            SelectItem(item);
+            EngineStatusText.Text = dialog.StartImmediately ? "Download dimulai" : "Masuk antrean";
+            UpdateStatusBar();
+        }
+        catch (Exception ex)
+        {
+            EngineStatusText.Text = "Gagal";
+            MessageBox.Show(this, ex.Message, "Download Aja",
+                MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 

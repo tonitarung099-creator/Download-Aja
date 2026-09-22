@@ -26,6 +26,7 @@ public sealed class MainViewModel : IAsyncDisposable
 
     public int ConnectionsPerDownload => _settings.ConnectionsPerDownload;
     public long SpeedLimitBytesPerSecond => _settings.SpeedLimitBytesPerSecond;
+    public bool ClipboardMonitoringEnabled => _settings.ClipboardMonitoringEnabled;
     public bool SchedulerEnabled => _settings.SchedulerEnabled;
     public DateTimeOffset? ScheduledQueueStartAt => _settings.ScheduledQueueStartAt;
     public int QueuedCount => Downloads.Count(x => x.Status == DownloadStatus.Menunggu && string.IsNullOrWhiteSpace(x.Gid));
@@ -66,10 +67,15 @@ public sealed class MainViewModel : IAsyncDisposable
         DownloadsView.Refresh();
     }
 
-    public async Task UpdateSettingsAsync(int connectionsPerDownload, long speedLimitBytesPerSecond, CancellationToken ct = default)
+    public async Task UpdateSettingsAsync(
+        int connectionsPerDownload,
+        long speedLimitBytesPerSecond,
+        bool clipboardMonitoringEnabled,
+        CancellationToken ct = default)
     {
         _settings.ConnectionsPerDownload = connectionsPerDownload;
         _settings.SpeedLimitBytesPerSecond = speedLimitBytesPerSecond;
+        _settings.ClipboardMonitoringEnabled = clipboardMonitoringEnabled;
         _settings.Normalize();
 
         await _settingsStore.SaveAsync(_settings, ct);

@@ -4,6 +4,7 @@ public sealed class DownloadSettings
 {
     public int ConnectionsPerDownload { get; set; } = 8;
     public long SpeedLimitBytesPerSecond { get; set; }
+    public bool ClipboardMonitoringEnabled { get; set; }
     public bool SchedulerEnabled { get; set; }
     public DateTimeOffset? ScheduledQueueStartAt { get; set; }
 

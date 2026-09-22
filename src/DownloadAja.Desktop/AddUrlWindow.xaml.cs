@@ -10,14 +10,18 @@ public partial class AddUrlWindow : Window
     public string DirectoryPath => DirectoryBox.Text.Trim();
     public bool StartImmediately => StartNowCheckBox.IsChecked == true;
 
-    public AddUrlWindow(string defaultDirectory)
+    public AddUrlWindow(string defaultDirectory, string? initialUrl = null)
     {
         InitializeComponent();
         DirectoryBox.Text = defaultDirectory;
 
         Loaded += (_, _) =>
         {
-            if (Clipboard.ContainsText())
+            if (!string.IsNullOrWhiteSpace(initialUrl))
+            {
+                UrlBox.Text = initialUrl.Trim();
+            }
+            else if (Clipboard.ContainsText())
             {
                 var text = Clipboard.GetText().Trim();
                 if (Uri.TryCreate(text, UriKind.Absolute, out _))

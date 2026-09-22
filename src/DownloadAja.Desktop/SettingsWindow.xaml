@@ -2,11 +2,12 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Pengaturan Download Aja"
-        Width="500" Height="320"
+        Width="540" Height="400"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner">
     <Grid Margin="22">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -16,11 +17,11 @@
 
         <TextBlock Text="Pengaturan Download" FontSize="21" FontWeight="SemiBold" Foreground="#0F172A"/>
         <TextBlock Grid.Row="1" Margin="0,7,0,18" Foreground="#64748B"
-                   Text="Pengaturan ini berlaku untuk download baru atau download yang dimulai ulang."/>
+                   Text="Pengaturan ini disimpan di folder data portable."/>
 
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="220"/>
+                <ColumnDefinition Width="230"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
@@ -47,9 +48,18 @@
             </StackPanel>
         </Grid>
 
-        <TextBlock x:Name="ValidationText" Grid.Row="3" Foreground="#B91C1C" Margin="0,16,0,0"/>
+        <Border Grid.Row="3" Margin="0,22,0,0" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="12">
+            <StackPanel>
+                <CheckBox x:Name="ClipboardMonitoringBox"
+                          Content="Pantau clipboard untuk URL HTTP/HTTPS"/>
+                <TextBlock Margin="24,5,0,0" Foreground="#64748B" FontSize="11" TextWrapping="Wrap"
+                           Text="Jika aktif, saat URL baru disalin aplikasi akan membuka dialog Tambah URL. Tidak ada isi clipboard yang dikirim keluar dari komputer."/>
+            </StackPanel>
+        </Border>
 
-        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
+        <TextBlock x:Name="ValidationText" Grid.Row="4" Foreground="#B91C1C" Margin="0,16,0,0"/>
+
+        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
             <Button IsCancel="True">Batal</Button>
             <Button IsDefault="True" Click="Save_Click" FontWeight="SemiBold">Simpan</Button>
         </StackPanel>
