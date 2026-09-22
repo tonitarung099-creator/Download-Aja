@@ -15,6 +15,9 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      - name: Run core smoke tests
+        run: dotnet run --project tests/DownloadAja.SmokeTests/DownloadAja.SmokeTests.csproj -c Release
+
       - name: Build desktop
         run: dotnet build src/DownloadAja.Desktop/DownloadAja.Desktop.csproj -c Release
 
