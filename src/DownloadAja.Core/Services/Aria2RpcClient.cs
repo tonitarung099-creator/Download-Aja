@@ -25,6 +25,7 @@ public sealed class Aria2RpcClient
         string? referer = null,
         string? userAgent = null,
         string? cookieHeader = null,
+        bool autoFileRenaming = false,
         CancellationToken ct = default)
     {
         var safeConnections = Math.Clamp(connections, 1, 16);
@@ -36,7 +37,7 @@ public sealed class Aria2RpcClient
             ["max-connection-per-server"] = safeConnections.ToString(),
             ["min-split-size"] = "1M",
             ["file-allocation"] = "none",
-            ["auto-file-renaming"] = "false",
+            ["auto-file-renaming"] = autoFileRenaming ? "true" : "false",
             ["allow-overwrite"] = "false",
             ["max-tries"] = "5",
             ["retry-wait"] = "3",

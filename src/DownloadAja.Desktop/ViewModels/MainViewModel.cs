@@ -117,17 +117,20 @@ public sealed class MainViewModel : IAsyncDisposable
         var isStream = IsStreamRequest(requestContext);
         var targetDirectory = string.IsNullOrWhiteSpace(directoryPath) ? DownloadDirectory : directoryPath;
         var normalizedOutputName = isStream ? null : NormalizeOutputFileName(outputFileName);
+        var customOutputPath = normalizedOutputName is null
+            ? null
+            : GetUniquePath(targetDirectory, normalizedOutputName);
 
         var item = new DownloadItem
         {
             Url = url,
             Name = isStream
                 ? BuildStreamFileName(requestContext?.SuggestedName)
-                : normalizedOutputName ?? TryGetFileName(url),
+                : customOutputPath is null
+                    ? TryGetFileName(url)
+                    : Path.GetFileName(customOutputPath),
             DirectoryPath = targetDirectory,
-            FilePath = normalizedOutputName is null
-                ? null
-                : Path.Combine(targetDirectory, normalizedOutputName),
+            FilePath = customOutputPath,
             Status = DownloadStatus.Menunggu,
             EngineKind = isStream ? DownloadEngineKind.Ffmpeg : DownloadEngineKind.Aria2
         };
@@ -212,6 +215,7 @@ public sealed class MainViewModel : IAsyncDisposable
             referer: requestContext?.Referer,
             userAgent: requestContext?.UserAgent,
             cookieHeader: requestContext?.CookieHeader,
+            autoFileRenaming: existingFileName is null,
             ct: ct);
 
         item.Status = DownloadStatus.Mengunduh;

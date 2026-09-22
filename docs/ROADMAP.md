@@ -29,6 +29,7 @@
 - [x] Pengaturan koneksi per download
 - [x] Speed limiter untuk download baru
 - [x] Pilihan folder tujuan per download
+- [x] Penanganan nama file bentrok tanpa merusak resume
 - [x] Drag/drop URL
 - [x] Clipboard watcher opsional
 - [x] Context menu file + double-click buka file selesai
