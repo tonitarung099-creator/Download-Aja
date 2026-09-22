@@ -230,8 +230,14 @@ jobs:
           try {
             Start-Sleep -Seconds 2
 
-            & $yt --no-update --no-remote-components --no-playlist --windows-filenames --js-runtimes "deno:$deno" --ffmpeg-location $ffmpegDir --paths $out --output "download.%(ext)s" "http://127.0.0.1:18766/sample.mp4"
-            if ($LASTEXITCODE -ne 0) { throw "yt-dlp gagal mengunduh media HTTP lokal." }
+            $ytOutput = @(& $yt --no-update --no-remote-components --no-playlist --windows-filenames --newline --no-colors --js-runtimes "deno:$deno" --ffmpeg-location $ffmpegDir --paths $out --output "download.%(ext)s" --print "before_dl:__DA_TITLE__%(title)s" --print "after_move:__DA_FILE__%(filepath)s" --progress "http://127.0.0.1:18766/sample.mp4" 2>&1)
+            $ytExit = $LASTEXITCODE
+            $ytOutput | ForEach-Object { Write-Host $_ }
+
+            if ($ytExit -ne 0) { throw "yt-dlp gagal mengunduh media HTTP lokal." }
+            if (-not ($ytOutput -match "__DA_TITLE__")) { throw "Marker judul yt-dlp tidak muncul." }
+            if (-not ($ytOutput -match "__DA_FILE__")) { throw "Marker path hasil yt-dlp tidak muncul." }
+            if (-not ($ytOutput -match "\[download\]")) { throw "Output progress yt-dlp tidak muncul." }
 
             $result = Get-ChildItem -Path $out -File | Where-Object { $_.Name -notlike "*.part" } | Select-Object -First 1
             if (-not $result -or $result.Length -le 0) {
