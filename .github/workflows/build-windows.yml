@@ -112,6 +112,27 @@ jobs:
             if ($sourceHash -ne $downloadHash) {
               throw "Hash hasil download aria2 tidak cocok."
             }
+
+            $duplicates = Join-Path $env:RUNNER_TEMP "downloadaja-http-duplicates"
+            New-Item -ItemType Directory -Force -Path $duplicates | Out-Null
+
+            & $aria --dir=$duplicates --auto-file-renaming=true --allow-overwrite=false --file-allocation=none "http://127.0.0.1:18765/source.bin"
+            if ($LASTEXITCODE -ne 0) { throw "aria2 gagal pada download duplikat pertama." }
+
+            & $aria --dir=$duplicates --auto-file-renaming=true --allow-overwrite=false --file-allocation=none "http://127.0.0.1:18765/source.bin"
+            if ($LASTEXITCODE -ne 0) { throw "aria2 gagal melakukan auto-rename download duplikat." }
+
+            $duplicateFiles = @(Get-ChildItem -Path $duplicates -File | Where-Object { $_.Name -notlike "*.aria2" })
+            if ($duplicateFiles.Count -ne 2) {
+              throw "Auto-rename aria2 tidak menghasilkan dua file terpisah. Jumlah: $($duplicateFiles.Count)"
+            }
+
+            foreach ($file in $duplicateFiles) {
+              $hash = (Get-FileHash $file.FullName -Algorithm SHA256).Hash
+              if ($hash -ne $sourceHash) {
+                throw "Hash file hasil auto-rename aria2 tidak cocok: $($file.Name)"
+              }
+            }
           }
           finally {
             if ($server -and -not $server.HasExited) {
