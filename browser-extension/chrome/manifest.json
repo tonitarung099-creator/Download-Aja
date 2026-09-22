@@ -12,7 +12,9 @@
     "tabs",
     "webRequest"
   ],
-  "host_permissions": ["<all_urls>"],
+  "host_permissions": [
+    "<all_urls>"
+  ],
   "background": {
     "service_worker": "service_worker.js"
   },
@@ -20,5 +22,17 @@
   "action": {
     "default_title": "Download Aja - Media terdeteksi",
     "default_popup": "popup.html"
-  }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.youtube.com/*",
+        "*://youtube.com/*"
+      ],
+      "js": [
+        "youtube_overlay.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
 }

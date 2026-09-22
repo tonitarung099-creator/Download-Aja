@@ -24,6 +24,7 @@ jobs:
           node --check browser-extension/chrome/service_worker.js
           node --check browser-extension/chrome/popup.js
           node --check browser-extension/chrome/options.js
+          node --check browser-extension/chrome/youtube_overlay.js
 
       - name: Build desktop
         run: dotnet build src/DownloadAja.Desktop/DownloadAja.Desktop.csproj -c Release

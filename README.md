@@ -33,6 +33,7 @@
 - Deteksi media langsung di tab Chrome
 - Download HLS/DASH non-DRM melalui FFmpeg
 - Download URL video YouTube publik/non-DRM melalui yt-dlp (playlist dimatikan)
+- Tombol overlay **Download Aja** langsung di atas pemutar YouTube
 
 ## Menjalankan portable
 
