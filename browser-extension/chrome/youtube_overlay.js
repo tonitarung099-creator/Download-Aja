@@ -14,7 +14,7 @@
       if (url.pathname === "/watch")
         return Boolean(url.searchParams.get("v"));
 
-      return /^\/(shorts|live|embed)\/[^/]+/.test(url.pathname);
+      return /^\/(shorts|live|embed|v|clip)\/[^/]+/i.test(url.pathname);
     } catch {
       return false;
     }

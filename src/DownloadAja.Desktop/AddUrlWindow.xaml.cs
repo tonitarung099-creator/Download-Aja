@@ -1,6 +1,7 @@
 using System.IO;
 using System.Windows;
 using Microsoft.Win32;
+using DownloadAja.Core.Services;
 
 namespace DownloadAja.Desktop;
 
@@ -36,22 +37,9 @@ public partial class AddUrlWindow : Window
 
     private void UrlBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
     {
-        YouTubeInfo.Visibility = IsYouTubeUrl(UrlBox.Text)
+        YouTubeInfo.Visibility = YouTubeUrlClassifier.IsVideoUrl(UrlBox.Text)
             ? Visibility.Visible
             : Visibility.Collapsed;
-    }
-
-    private static bool IsYouTubeUrl(string? value)
-    {
-        if (!Uri.TryCreate(value?.Trim(), UriKind.Absolute, out var uri))
-            return false;
-
-        var host = uri.Host.ToLowerInvariant();
-        return host == "youtu.be"
-            || host == "youtube.com"
-            || host.EndsWith(".youtube.com", StringComparison.Ordinal)
-            || host == "youtube-nocookie.com"
-            || host.EndsWith(".youtube-nocookie.com", StringComparison.Ordinal);
     }
 
     private void BrowseFolder_Click(object sender, RoutedEventArgs e)
@@ -73,6 +61,18 @@ public partial class AddUrlWindow : Window
         {
             MessageBox.Show(this, "Masukkan URL HTTP/HTTPS yang valid.", "Download Aja",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        if (YouTubeUrlClassifier.IsYouTubeHost(DownloadUrl) &&
+            !YouTubeUrlClassifier.IsVideoUrl(DownloadUrl))
+        {
+            MessageBox.Show(
+                this,
+                "URL YouTube ini bukan URL video. Buka videonya lalu gunakan URL watch, shorts, live, clip, atau youtu.be.",
+                "Download Aja",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
             return;
         }
 

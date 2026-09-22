@@ -105,4 +105,5 @@ Jangan kirim cookie, password, token, atau API key.
 - [ ] Setelah selesai, video dan audio sudah tergabung lewat FFmpeg.
 - [ ] Hentikan di tengah download lalu Mulai/Coba Lagi dan pastikan file .part dilanjutkan.
 - [ ] URL playlist dengan parameter video hanya mengunduh satu video.
+- [ ] Channel/beranda YouTube tidak dianggap sebagai video dan menampilkan pesan yang jelas.
 - [ ] Video DRM/private/berkontrol akses tidak dicoba dibypass.

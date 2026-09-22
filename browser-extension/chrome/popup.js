@@ -6,14 +6,27 @@ const downloadPageButton = document.getElementById("downloadPage");
 let tabId = null;
 let currentTabUrl = "";
 
-function isYouTubeUrl(value) {
+function isYouTubeVideoUrl(value) {
   try {
-    const host = new URL(value).hostname.toLowerCase();
-    return host === "youtu.be"
-      || host === "youtube.com"
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+    const path = url.pathname;
+
+    if (host === "youtu.be")
+      return path.split("/").filter(Boolean).length >= 1;
+
+    const isYouTube = host === "youtube.com"
       || host.endsWith(".youtube.com")
       || host === "youtube-nocookie.com"
       || host.endsWith(".youtube-nocookie.com");
+
+    if (!isYouTube)
+      return false;
+
+    if (path.toLowerCase() === "/watch")
+      return Boolean(url.searchParams.get("v"));
+
+    return /^\/(shorts|live|embed|v|clip)\/[^/]+/i.test(path);
   } catch {
     return false;
   }
@@ -96,7 +109,7 @@ async function load() {
   tabId = tab?.id ?? null;
   currentTabUrl = tab?.url || "";
 
-  if (isYouTubeUrl(currentTabUrl)) {
+  if (isYouTubeVideoUrl(currentTabUrl)) {
     youtubeCard.style.display = "block";
   } else {
     youtubeCard.style.display = "none";
@@ -116,7 +129,7 @@ async function load() {
 }
 
 downloadPageButton.addEventListener("click", async () => {
-  if (!isYouTubeUrl(currentTabUrl))
+  if (!isYouTubeVideoUrl(currentTabUrl))
     return;
 
   downloadPageButton.disabled = true;

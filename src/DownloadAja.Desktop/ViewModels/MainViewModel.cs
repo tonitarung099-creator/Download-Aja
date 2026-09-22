@@ -117,7 +117,13 @@ public sealed class MainViewModel : IAsyncDisposable
         CancellationToken ct = default)
     {
         var isStream = IsStreamRequest(requestContext);
-        var isYouTube = !isStream && IsYouTubeUrl(url);
+        var isYouTubeHost = !isStream && YouTubeUrlClassifier.IsYouTubeHost(url);
+
+        if (isYouTubeHost && !YouTubeUrlClassifier.IsVideoUrl(url))
+            throw new InvalidOperationException(
+                "URL YouTube bukan URL video. Gunakan URL watch, shorts, live, embed, clip, atau youtu.be.");
+
+        var isYouTube = isYouTubeHost && YouTubeUrlClassifier.IsVideoUrl(url);
         var targetDirectory = string.IsNullOrWhiteSpace(directoryPath) ? DownloadDirectory : directoryPath;
         var normalizedOutputName = isStream || isYouTube ? null : NormalizeOutputFileName(outputFileName);
         var youtubeOutputName = isYouTube ? NormalizeYouTubeOutputName(outputFileName) : null;
@@ -745,19 +751,6 @@ public sealed class MainViewModel : IAsyncDisposable
     private static bool IsStreamRequest(DownloadRequestContext? context)
         => string.Equals(context?.MediaKind, "hls", StringComparison.OrdinalIgnoreCase)
             || string.Equals(context?.MediaKind, "dash", StringComparison.OrdinalIgnoreCase);
-
-    private static bool IsYouTubeUrl(string url)
-    {
-        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
-            return false;
-
-        var host = uri.Host.ToLowerInvariant();
-        return host == "youtu.be"
-            || host == "youtube.com"
-            || host.EndsWith(".youtube.com", StringComparison.Ordinal)
-            || host == "youtube-nocookie.com"
-            || host.EndsWith(".youtube-nocookie.com", StringComparison.Ordinal);
-    }
 
     private static string? NormalizeYouTubeOutputName(string? value)
     {

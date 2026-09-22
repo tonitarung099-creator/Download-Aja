@@ -17,6 +17,16 @@ Check(new DownloadItem { Name = "backup.7z" }.Category == "Arsip", "Kategori 7Z 
 Check(new DownloadItem { Name = "YouTube video", EngineKind = DownloadEngineKind.YtDlp }.Category == "Video",
     "Engine yt-dlp harus dikategorikan sebagai Video.");
 
+Check(YouTubeUrlClassifier.IsVideoUrl("https://www.youtube.com/watch?v=abc123"), "URL watch YouTube harus dikenali sebagai video.");
+Check(YouTubeUrlClassifier.IsVideoUrl("https://youtu.be/abc123"), "URL youtu.be harus dikenali sebagai video.");
+Check(YouTubeUrlClassifier.IsVideoUrl("https://www.youtube.com/shorts/abc123"), "URL Shorts harus dikenali sebagai video.");
+Check(YouTubeUrlClassifier.IsVideoUrl("https://www.youtube.com/live/abc123"), "URL live harus dikenali sebagai video.");
+Check(YouTubeUrlClassifier.IsVideoUrl("https://www.youtube-nocookie.com/embed/abc123"), "URL embed youtube-nocookie harus dikenali.");
+Check(!YouTubeUrlClassifier.IsVideoUrl("https://www.youtube.com/"), "Beranda YouTube tidak boleh dikenali sebagai video.");
+Check(!YouTubeUrlClassifier.IsVideoUrl("https://www.youtube.com/@channel"), "Channel YouTube tidak boleh dikenali sebagai video.");
+Check(!YouTubeUrlClassifier.IsVideoUrl("https://www.youtube.com/playlist?list=PL123"), "Playlist murni tidak boleh dikenali sebagai video.");
+Check(!YouTubeUrlClassifier.IsYouTubeHost("https://notyoutube.com/watch?v=abc"), "Domain mirip YouTube tidak boleh dianggap YouTube.");
+
 var settings = new DownloadSettings
 {
     ConnectionsPerDownload = 99,

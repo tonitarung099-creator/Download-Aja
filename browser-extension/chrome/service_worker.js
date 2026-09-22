@@ -19,9 +19,13 @@ chrome.runtime.onInstalled.addListener(async () => {
     title: "Download video YouTube dengan Download Aja",
     contexts: ["page"],
     documentUrlPatterns: [
-      "*://*.youtube.com/*",
+      "*://*.youtube.com/watch*",
+      "*://*.youtube.com/shorts/*",
+      "*://*.youtube.com/live/*",
+      "*://*.youtube.com/embed/*",
+      "*://*.youtube.com/clip/*",
       "*://youtu.be/*",
-      "*://*.youtube-nocookie.com/*"
+      "*://*.youtube-nocookie.com/embed/*"
     ]
   });
 
@@ -54,6 +58,32 @@ function isYouTubeUrl(value) {
       || host.endsWith(".youtube.com")
       || host === "youtube-nocookie.com"
       || host.endsWith(".youtube-nocookie.com");
+  } catch {
+    return false;
+  }
+}
+
+function isYouTubeVideoUrl(value) {
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+    const path = url.pathname;
+
+    if (host === "youtu.be")
+      return path.split("/").filter(Boolean).length >= 1;
+
+    const isYouTube = host === "youtube.com"
+      || host.endsWith(".youtube.com")
+      || host === "youtube-nocookie.com"
+      || host.endsWith(".youtube-nocookie.com");
+
+    if (!isYouTube)
+      return false;
+
+    if (path.toLowerCase() === "/watch")
+      return Boolean(url.searchParams.get("v"));
+
+    return /^\/(shorts|live|embed|v|clip)\/[^/]+/i.test(path);
   } catch {
     return false;
   }
@@ -270,8 +300,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 
     if (message?.type === "downloadYouTubePage") {
-      if (!isYouTubeUrl(message.url)) {
-        sendResponse({ ok: false, error: "Tab aktif bukan halaman YouTube." });
+      if (!isYouTubeVideoUrl(message.url)) {
+        sendResponse({ ok: false, error: "Tab aktif bukan halaman video YouTube." });
         return;
       }
 
@@ -317,7 +347,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   let url = "";
 
   if (info.menuItemId === "downloadaja-youtube-page") {
-    if (info.pageUrl && isYouTubeUrl(info.pageUrl))
+    if (info.pageUrl && isYouTubeVideoUrl(info.pageUrl))
       url = info.pageUrl;
   } else if (info.menuItemId === "downloadaja-link") {
     url = info.linkUrl || info.srcUrl || "";
