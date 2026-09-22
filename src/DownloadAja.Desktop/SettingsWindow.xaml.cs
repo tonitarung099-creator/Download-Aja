@@ -30,6 +30,11 @@ public partial class SettingsWindow : Window
         ClipboardMonitoringBox.IsChecked = ClipboardMonitoringEnabled;
     }
 
+    private void Diagnostics_Click(object sender, RoutedEventArgs e)
+    {
+        new DiagnosticsWindow { Owner = this }.ShowDialog();
+    }
+
     private void Save_Click(object sender, RoutedEventArgs e)
     {
         if (!TryReadComboValue(ConnectionsBox, out var connections))

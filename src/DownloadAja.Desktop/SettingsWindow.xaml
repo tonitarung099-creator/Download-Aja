@@ -72,9 +72,12 @@
 
         <TextBlock x:Name="ValidationText" Grid.Row="4" Foreground="#B91C1C" Margin="0,16,0,0"/>
 
-        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button IsCancel="True">Batal</Button>
-            <Button IsDefault="True" Click="Save_Click" FontWeight="SemiBold">Simpan</Button>
-        </StackPanel>
+        <Grid Grid.Row="5">
+            <Button HorizontalAlignment="Left" Click="Diagnostics_Click">Tentang &amp; Diagnostik</Button>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button IsCancel="True">Batal</Button>
+                <Button IsDefault="True" Click="Save_Click" FontWeight="SemiBold">Simpan</Button>
+            </StackPanel>
+        </Grid>
     </Grid>
 </Window>

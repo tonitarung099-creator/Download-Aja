@@ -50,6 +50,7 @@
 - [ ] Test unit lebih lengkap
 - [x] Test integrasi HTTP lokal untuk aria2
 - [x] Crash logging lokal
+- [x] Halaman Tentang & Diagnostik lokal
 - [x] Keyboard shortcuts dasar
 - [ ] Audit accessibility lengkap
 - [ ] Dark mode
