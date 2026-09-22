@@ -13,10 +13,20 @@ public partial class MainWindow : Window
         DataContext = _viewModel;
     }
 
+    public void EnqueueUrl(string url)
+    {
+        if (Uri.TryCreate(url, UriKind.Absolute, out var uri) &&
+            (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+        {
+            _viewModel.AddPlaceholder(uri.AbsoluteUri);
+            Activate();
+        }
+    }
+
     private void AddUrl_Click(object sender, RoutedEventArgs e)
     {
         var dialog = new AddUrlWindow { Owner = this };
         if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.DownloadUrl))
-            _viewModel.AddPlaceholder(dialog.DownloadUrl);
+            EnqueueUrl(dialog.DownloadUrl);
     }
 }
