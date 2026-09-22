@@ -1,7 +1,7 @@
 <Window x:Class="DownloadAja.Desktop.AddUrlWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Tambah URL" Height="410" Width="660"
+        Title="Tambah URL" Height="455" Width="660"
         ResizeMode="NoResize" WindowStartupLocation="CenterOwner">
     <Grid Margin="18">
         <Grid.RowDefinitions>
@@ -16,7 +16,21 @@
         </Grid.RowDefinitions>
 
         <TextBlock Text="Alamat download" FontWeight="SemiBold" Margin="0,0,0,7"/>
-        <TextBox x:Name="UrlBox" Grid.Row="1" Height="34" VerticalContentAlignment="Center" Padding="8,0"/>
+        <StackPanel Grid.Row="1">
+            <TextBox x:Name="UrlBox" Height="34" VerticalContentAlignment="Center" Padding="8,0"
+                     TextChanged="UrlBox_TextChanged"/>
+            <Border x:Name="YouTubeInfo"
+                    Visibility="Collapsed"
+                    Margin="0,8,0,0"
+                    Padding="10"
+                    CornerRadius="7"
+                    Background="#EFF6FF"
+                    BorderBrush="#BFDBFE"
+                    BorderThickness="1">
+                <TextBlock Foreground="#1E3A8A" TextWrapping="Wrap"
+                           Text="YouTube publik terdeteksi — Download Aja akan memakai yt-dlp + Deno + FFmpeg, memilih kualitas terbaik yang tersedia, dan hanya mengambil satu video (bukan seluruh playlist)."/>
+            </Border>
+        </StackPanel>
 
         <TextBlock Grid.Row="2" Text="Simpan ke folder" FontWeight="SemiBold" Margin="0,16,0,7"/>
         <Grid Grid.Row="3">
