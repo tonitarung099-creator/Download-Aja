@@ -239,7 +239,7 @@ public partial class MainWindow : Window
             return;
 
         var urls = text
-            .Split(['\\r', '\\n', '\\t', ' '], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Split(['\r', '\n', '\t', ' '], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Select(value => Uri.TryCreate(value, UriKind.Absolute, out var uri) ? uri : null)
             .Where(uri => uri is not null && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
             .Select(uri => uri!.AbsoluteUri)
