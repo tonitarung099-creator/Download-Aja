@@ -127,7 +127,8 @@ try
             DirectoryPath = tempDirectory,
             CompletedBytes = 4321,
             Status = DownloadStatus.Mengunduh,
-            EngineKind = DownloadEngineKind.YtDlp
+            EngineKind = DownloadEngineKind.YtDlp,
+            YouTubeFormatProfile = YouTubeFormatProfiles.P720
         }
     };
 
@@ -136,6 +137,8 @@ try
     Check(youtubeRestored.Count == 1, "Riwayat yt-dlp harus dapat dimuat.");
     Check(youtubeRestored[0].EngineKind == DownloadEngineKind.YtDlp, "Engine yt-dlp harus dipertahankan.");
     Check(youtubeRestored[0].Status == DownloadStatus.Gagal, "yt-dlp yang terputus harus dipulihkan sebagai Gagal.");
+    Check(youtubeRestored[0].YouTubeFormatProfile == YouTubeFormatProfiles.P720,
+        "Profil kualitas YouTube harus dipertahankan setelah reload.");
     Check(youtubeRestored[0].ErrorMessage?.Contains(".part", StringComparison.OrdinalIgnoreCase) == true,
         "Riwayat yt-dlp terputus harus menjelaskan resume .part.");
 }
