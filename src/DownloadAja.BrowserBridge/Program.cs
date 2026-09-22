@@ -19,31 +19,79 @@ internal static class Program
             var message = await ReadMessageAsync(input);
             if (message is null) break;
 
-            if (message.RootElement.TryGetProperty("type", out var type) &&
-                type.GetString() == "addDownload" &&
-                message.RootElement.TryGetProperty("url", out var urlElement))
+            if (TryCreateDesktopPayload(message.RootElement, out var payload))
             {
-                var url = urlElement.GetString();
-                if (Uri.TryCreate(url, UriKind.Absolute, out var uri) &&
-                    (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
-                {
-                    var delivered = await TrySendToRunningDesktopAsync(uri.AbsoluteUri);
-                    if (!delivered)
-                    {
-                        LaunchDesktop(uri.AbsoluteUri);
-                        delivered = true;
-                    }
+                var delivered = await TrySendToRunningDesktopAsync(payload, timeoutMs: 700);
 
-                    await WriteMessageAsync(new { ok = delivered });
-                    continue;
+                if (!delivered)
+                {
+                    LaunchDesktop();
+                    delivered = await RetrySendAsync(payload);
                 }
+
+                await WriteMessageAsync(delivered
+                    ? new { ok = true }
+                    : new { ok = false, error = "Download Aja tidak dapat dihubungi." });
+                continue;
             }
 
             await WriteMessageAsync(new { ok = false, error = "Pesan tidak valid." });
         }
     }
 
-    private static async Task<bool> TrySendToRunningDesktopAsync(string url)
+    private static bool TryCreateDesktopPayload(JsonElement root, out string payload)
+    {
+        payload = "";
+
+        if (!root.TryGetProperty("type", out var type) ||
+            type.GetString() != "addDownload" ||
+            !root.TryGetProperty("url", out var urlElement))
+            return false;
+
+        var url = urlElement.GetString();
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) ||
+            (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+            return false;
+
+        payload = JsonSerializer.Serialize(new
+        {
+            type = "addDownload",
+            url = uri.AbsoluteUri,
+            referrer = ReadCleanString(root, "referrer", 4096),
+            userAgent = ReadCleanString(root, "userAgent", 4096),
+            cookieHeader = ReadCleanString(root, "cookieHeader", 262144)
+        });
+
+        return true;
+    }
+
+    private static string? ReadCleanString(JsonElement root, string propertyName, int maxLength)
+    {
+        if (!root.TryGetProperty(propertyName, out var element) ||
+            element.ValueKind != JsonValueKind.String)
+            return null;
+
+        var value = element.GetString();
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+
+        var clean = value.Replace("\r", "").Replace("\n", "");
+        return clean.Length <= maxLength ? clean : clean[..maxLength];
+    }
+
+    private static async Task<bool> RetrySendAsync(string payload)
+    {
+        for (var attempt = 0; attempt < 20; attempt++)
+        {
+            await Task.Delay(100);
+            if (await TrySendToRunningDesktopAsync(payload, timeoutMs: 400))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static async Task<bool> TrySendToRunningDesktopAsync(string message, int timeoutMs)
     {
         try
         {
@@ -53,7 +101,7 @@ internal static class Program
                 PipeDirection.Out,
                 PipeOptions.Asynchronous);
 
-            using var timeout = new CancellationTokenSource(600);
+            using var timeout = new CancellationTokenSource(timeoutMs);
             await pipe.ConnectAsync(timeout.Token);
 
             await using var writer = new StreamWriter(pipe, new UTF8Encoding(false))
@@ -61,7 +109,7 @@ internal static class Program
                 AutoFlush = true
             };
 
-            await writer.WriteLineAsync(url);
+            await writer.WriteLineAsync(message);
             return true;
         }
         catch (Exception ex) when (ex is IOException or OperationCanceledException or TimeoutException)
@@ -70,7 +118,7 @@ internal static class Program
         }
     }
 
-    private static void LaunchDesktop(string url)
+    private static void LaunchDesktop()
     {
         var baseDir = AppContext.BaseDirectory;
         var exe = Path.GetFullPath(Path.Combine(baseDir, "..", "DownloadAja.exe"));
@@ -81,8 +129,7 @@ internal static class Program
         Process.Start(new ProcessStartInfo
         {
             FileName = exe,
-            UseShellExecute = true,
-            ArgumentList = { "--add-url", url }
+            UseShellExecute = true
         });
     }
 

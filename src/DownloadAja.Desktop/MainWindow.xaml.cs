@@ -29,7 +29,7 @@ public partial class MainWindow : Window
         _refreshTimer.Tick += RefreshTimer_Tick;
     }
 
-    public async Task EnqueueUrlAsync(string url)
+    public async Task EnqueueUrlAsync(string url, DownloadRequestContext? requestContext = null)
     {
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) ||
             (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
@@ -38,7 +38,7 @@ public partial class MainWindow : Window
         try
         {
             EngineStatusText.Text = "Menambahkan download...";
-            var item = await _viewModel.AddAndStartAsync(uri.AbsoluteUri);
+            var item = await _viewModel.AddAndStartAsync(uri.AbsoluteUri, requestContext);
             SelectItem(item);
             EngineStatusText.Text = "Siap";
 

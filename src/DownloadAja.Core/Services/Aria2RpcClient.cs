@@ -22,10 +22,13 @@ public sealed class Aria2RpcClient
         int connections = 8,
         string? outputFileName = null,
         long speedLimitBytesPerSecond = 0,
+        string? referer = null,
+        string? userAgent = null,
+        string? cookieHeader = null,
         CancellationToken ct = default)
     {
         var safeConnections = Math.Clamp(connections, 1, 16);
-        var options = new Dictionary<string, string>
+        var options = new Dictionary<string, object>
         {
             ["dir"] = directory,
             ["continue"] = "true",
@@ -46,6 +49,15 @@ public sealed class Aria2RpcClient
 
         if (speedLimitBytesPerSecond > 0)
             options["max-download-limit"] = speedLimitBytesPerSecond.ToString();
+
+        if (!string.IsNullOrWhiteSpace(referer))
+            options["referer"] = SanitizeOptionValue(referer, 4096);
+
+        if (!string.IsNullOrWhiteSpace(userAgent))
+            options["user-agent"] = SanitizeOptionValue(userAgent, 4096);
+
+        if (!string.IsNullOrWhiteSpace(cookieHeader))
+            options["header"] = new[] { $"Cookie: {SanitizeOptionValue(cookieHeader, 262144)}" };
 
         var result = await CallAsync("aria2.addUri", WithToken([new[] { url }, options]), ct);
         return result.GetString() ?? throw new InvalidOperationException("aria2 tidak mengembalikan GID.");
@@ -91,6 +103,12 @@ public sealed class Aria2RpcClient
             throw new InvalidOperationException(error.ToString());
 
         return doc.RootElement.GetProperty("result").Clone();
+    }
+
+    private static string SanitizeOptionValue(string value, int maxLength)
+    {
+        var clean = value.Replace("\r", "").Replace("\n", "");
+        return clean.Length <= maxLength ? clean : clean[..maxLength];
     }
 
     private object[] WithToken(object[] parameters)

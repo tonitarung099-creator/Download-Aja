@@ -81,13 +81,17 @@ public sealed class MainViewModel : IAsyncDisposable
         await _settingsStore.SaveAsync(_settings, ct);
     }
 
-    public Task<DownloadItem> AddAndStartAsync(string url, CancellationToken ct = default)
-        => AddAsync(url, DownloadDirectory, startImmediately: true, ct);
+    public Task<DownloadItem> AddAndStartAsync(
+        string url,
+        DownloadRequestContext? requestContext = null,
+        CancellationToken ct = default)
+        => AddAsync(url, DownloadDirectory, startImmediately: true, requestContext, ct);
 
     public async Task<DownloadItem> AddAsync(
         string url,
         string directoryPath,
         bool startImmediately,
+        DownloadRequestContext? requestContext = null,
         CancellationToken ct = default)
     {
         var item = new DownloadItem
@@ -103,7 +107,7 @@ public sealed class MainViewModel : IAsyncDisposable
         try
         {
             if (startImmediately)
-                await StartAsync(item, ct);
+                await StartAsync(item, requestContext, ct);
             else
                 await SaveStateAsync(ct);
 
@@ -118,7 +122,13 @@ public sealed class MainViewModel : IAsyncDisposable
         }
     }
 
-    public async Task StartAsync(DownloadItem item, CancellationToken ct = default)
+    public Task StartAsync(DownloadItem item, CancellationToken ct = default)
+        => StartAsync(item, requestContext: null, ct);
+
+    public async Task StartAsync(
+        DownloadItem item,
+        DownloadRequestContext? requestContext,
+        CancellationToken ct = default)
     {
         if (item.Status == DownloadStatus.Selesai)
             return;
@@ -160,6 +170,9 @@ public sealed class MainViewModel : IAsyncDisposable
             connections: _settings.ConnectionsPerDownload,
             outputFileName: existingFileName,
             speedLimitBytesPerSecond: _settings.SpeedLimitBytesPerSecond,
+            referer: requestContext?.Referer,
+            userAgent: requestContext?.UserAgent,
+            cookieHeader: requestContext?.CookieHeader,
             ct: ct);
 
         item.Status = DownloadStatus.Mengunduh;

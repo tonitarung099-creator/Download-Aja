@@ -4,17 +4,32 @@
   <meta charset="utf-8">
   <title>Download Aja - Pengaturan Browser</title>
   <style>
-    body { font-family: system-ui, sans-serif; max-width: 680px; margin: 40px auto; padding: 0 20px; color: #0f172a; }
+    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 40px auto; padding: 0 20px; color: #0f172a; }
     .card { border: 1px solid #e2e8f0; border-radius: 14px; padding: 22px; }
-    label { display: flex; gap: 10px; align-items: center; }
-    p { color: #64748b; line-height: 1.5; }
+    label { display: flex; gap: 10px; align-items: flex-start; margin: 0 0 18px; }
+    label:last-child { margin-bottom: 0; }
+    p { color: #64748b; line-height: 1.5; margin: 5px 0 0; }
+    .text { display: block; }
   </style>
 </head>
 <body>
   <h1>Download Aja</h1>
   <div class="card">
-    <label><input id="intercept" type="checkbox"> Alihkan download Chrome otomatis ke Download Aja</label>
-    <p>Jika dimatikan, extension tetap menyediakan menu klik kanan “Download dengan Download Aja”.</p>
+    <label>
+      <input id="intercept" type="checkbox">
+      <span class="text">
+        Alihkan download Chrome otomatis ke Download Aja
+        <p>Jika dimatikan, menu klik kanan “Download dengan Download Aja” tetap tersedia.</p>
+      </span>
+    </label>
+
+    <label>
+      <input id="cookies" type="checkbox">
+      <span class="text">
+        Kirim cookie sesi saat diperlukan
+        <p>Opsional untuk link yang membutuhkan login. Cookie hanya diteruskan ke aplikasi lokal untuk request download dan tidak disimpan di riwayat Download Aja.</p>
+      </span>
+    </label>
   </div>
   <script src="options.js"></script>
 </body>
