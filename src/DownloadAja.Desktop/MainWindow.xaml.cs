@@ -169,9 +169,16 @@ public partial class MainWindow : Window
     private async void Pause_Click(object sender, RoutedEventArgs e)
     {
         var items = GetSelectedItems()
-            .Where(item => item.Status == DownloadStatus.Mengunduh)
+            .Where(item =>
+                item.Status == DownloadStatus.Mengunduh &&
+                item.EngineKind == DownloadEngineKind.Aria2)
             .ToArray();
-        if (items.Length == 0) return;
+
+        if (items.Length == 0)
+        {
+            EngineStatusText.Text = "Tidak ada download HTTP/HTTPS aktif yang dapat dijeda";
+            return;
+        }
 
         await RunBatchActionAsync(
             items,
