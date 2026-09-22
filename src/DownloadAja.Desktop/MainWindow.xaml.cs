@@ -113,7 +113,8 @@ public partial class MainWindow : Window
                 dialog.DownloadUrl,
                 dialog.DirectoryPath,
                 dialog.StartImmediately,
-                dialog.OutputFileName);
+                dialog.OutputFileName,
+                dialog.YouTubeFormatProfile);
 
             SelectItem(item);
             EngineStatusText.Text = dialog.StartImmediately ? "Download dimulai" : "Masuk antrean";
@@ -492,7 +493,8 @@ public partial class MainWindow : Window
                 dialog.DownloadUrl,
                 dialog.DirectoryPath,
                 dialog.StartImmediately,
-                dialog.OutputFileName);
+                dialog.OutputFileName,
+                dialog.YouTubeFormatProfile);
 
             SelectItem(item);
             EngineStatusText.Text = dialog.StartImmediately ? "Download dimulai" : "Masuk antrean";

@@ -5,6 +5,14 @@ const DIRECT_MEDIA_EXTENSIONS = new Set([
   "mp3", "m4a", "aac", "flac", "wav", "ogg", "opus", "wma"
 ]);
 const STREAM_EXTENSIONS = new Set(["m3u8", "mpd"]);
+const YOUTUBE_QUALITY_PROFILES = new Set([
+  "best", "2160p", "1440p", "1080p", "720p", "480p", "360p"
+]);
+
+function normalizeYouTubeQuality(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  return YOUTUBE_QUALITY_PROFILES.has(normalized) ? normalized : "best";
+}
 
 chrome.runtime.onInstalled.addListener(async () => {
   await chrome.contextMenus.removeAll();
@@ -33,7 +41,8 @@ chrome.runtime.onInstalled.addListener(async () => {
     "interceptDownloads",
     "sendSessionCookies",
     "detectMedia",
-    "excludedHosts"
+    "excludedHosts",
+    "youtubeQuality"
   ]);
 
   const defaults = {};
@@ -45,6 +54,8 @@ chrome.runtime.onInstalled.addListener(async () => {
     defaults.detectMedia = true;
   if (!Array.isArray(current.excludedHosts))
     defaults.excludedHosts = [];
+  if (!YOUTUBE_QUALITY_PROFILES.has(current.youtubeQuality))
+    defaults.youtubeQuality = "best";
 
   if (Object.keys(defaults).length)
     await chrome.storage.local.set(defaults);
@@ -264,7 +275,7 @@ async function getCookieHeader(url) {
   }
 }
 
-async function sendToDesktop(url, referrer = "", mediaKind = "", suggestedName = "") {
+async function sendToDesktop(url, referrer = "", mediaKind = "", suggestedName = "", formatProfile = "") {
   if (!url)
     throw new Error("URL kosong.");
 
@@ -277,7 +288,8 @@ async function sendToDesktop(url, referrer = "", mediaKind = "", suggestedName =
     userAgent: navigator.userAgent || "",
     cookieHeader,
     mediaKind,
-    suggestedName
+    suggestedName,
+    formatProfile: normalizeYouTubeQuality(formatProfile)
   });
 
   if (!response?.ok)
@@ -306,7 +318,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
 
       try {
-        await sendToDesktop(message.url, message.url || "");
+        const stored = await chrome.storage.local.get("youtubeQuality");
+        const formatProfile = normalizeYouTubeQuality(
+          message.formatProfile || stored.youtubeQuality
+        );
+        await chrome.storage.local.set({ youtubeQuality: formatProfile });
+        await sendToDesktop(message.url, message.url || "", "", "", formatProfile);
         sendResponse({ ok: true });
       } catch (error) {
         sendResponse({ ok: false, error: String(error?.message || error) });
@@ -357,7 +374,13 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     return;
 
   try {
-    await sendToDesktop(url, tab?.url || info.pageUrl || "");
+    let formatProfile = "";
+    if (info.menuItemId === "downloadaja-youtube-page") {
+      const stored = await chrome.storage.local.get("youtubeQuality");
+      formatProfile = normalizeYouTubeQuality(stored.youtubeQuality);
+    }
+
+    await sendToDesktop(url, tab?.url || info.pageUrl || "", "", "", formatProfile);
   } catch (error) {
     console.error("Gagal mengirim download ke Download Aja:", error);
   }

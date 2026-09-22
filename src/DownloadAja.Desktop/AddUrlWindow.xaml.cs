@@ -1,5 +1,6 @@
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
 using Microsoft.Win32;
 using DownloadAja.Core.Services;
 
@@ -10,6 +11,8 @@ public partial class AddUrlWindow : Window
     public string DownloadUrl => UrlBox.Text.Trim();
     public string DirectoryPath => DirectoryBox.Text.Trim();
     public string OutputFileName => FileNameBox.Text.Trim();
+    public string YouTubeFormatProfile =>
+        (YouTubeQualityBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? YouTubeFormatProfiles.Best;
     public bool StartImmediately => StartNowCheckBox.IsChecked == true;
 
     public AddUrlWindow(string defaultDirectory, string? initialUrl = null)

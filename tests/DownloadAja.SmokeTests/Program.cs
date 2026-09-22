@@ -27,6 +27,11 @@ Check(!YouTubeUrlClassifier.IsVideoUrl("https://www.youtube.com/@channel"), "Cha
 Check(!YouTubeUrlClassifier.IsVideoUrl("https://www.youtube.com/playlist?list=PL123"), "Playlist murni tidak boleh dikenali sebagai video.");
 Check(!YouTubeUrlClassifier.IsYouTubeHost("https://notyoutube.com/watch?v=abc"), "Domain mirip YouTube tidak boleh dianggap YouTube.");
 
+Check(YouTubeFormatProfiles.Normalize("1080P") == YouTubeFormatProfiles.P1080, "Profil kualitas harus dinormalisasi case-insensitive.");
+Check(YouTubeFormatProfiles.Normalize("tidak-valid") == YouTubeFormatProfiles.Best, "Profil kualitas tidak valid harus kembali ke Best.");
+Check(YouTubeFormatProfiles.GetFormatSelector(YouTubeFormatProfiles.P720).Contains("height<=720", StringComparison.Ordinal),
+    "Selector 720p harus membatasi tinggi video.");
+
 var settings = new DownloadSettings
 {
     ConnectionsPerDownload = 99,

@@ -16,6 +16,7 @@ public sealed class DownloadItem : INotifyPropertyChanged
     private long _speedBytesPerSecond;
     private DownloadStatus _status = DownloadStatus.Menunggu;
     private DownloadEngineKind _engineKind = DownloadEngineKind.Aria2;
+    private string _youtubeFormatProfile = "best";
 
     public string Id { get; init; } = Guid.NewGuid().ToString("N");
 
@@ -43,6 +44,7 @@ public sealed class DownloadItem : INotifyPropertyChanged
     public string? FilePath { get => _filePath; set => Set(ref _filePath, value); }
     public string? Gid { get => _gid; set => Set(ref _gid, value); }
     public string? ErrorMessage { get => _errorMessage; set => Set(ref _errorMessage, value); }
+    public string YouTubeFormatProfile { get => _youtubeFormatProfile; set => Set(ref _youtubeFormatProfile, value); }
 
     public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.Now;
 

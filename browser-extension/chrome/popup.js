@@ -3,6 +3,7 @@ const clearButton = document.getElementById("clear");
 const message = document.getElementById("message");
 const youtubeCard = document.getElementById("youtubeCard");
 const downloadPageButton = document.getElementById("downloadPage");
+const youtubeQuality = document.getElementById("youtubeQuality");
 let tabId = null;
 let currentTabUrl = "";
 
@@ -105,6 +106,9 @@ function render(items) {
 }
 
 async function load() {
+  const stored = await chrome.storage.local.get("youtubeQuality");
+  youtubeQuality.value = stored.youtubeQuality || "best";
+
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   tabId = tab?.id ?? null;
   currentTabUrl = tab?.url || "";
@@ -137,9 +141,13 @@ downloadPageButton.addEventListener("click", async () => {
   showMessage("");
 
   try {
+    const formatProfile = youtubeQuality.value || "best";
+    await chrome.storage.local.set({ youtubeQuality: formatProfile });
+
     const response = await chrome.runtime.sendMessage({
       type: "downloadYouTubePage",
-      url: currentTabUrl
+      url: currentTabUrl,
+      formatProfile
     });
 
     if (response?.ok) {
@@ -154,6 +162,10 @@ downloadPageButton.addEventListener("click", async () => {
     downloadPageButton.textContent = "Download video halaman ini";
     showMessage(String(error?.message || error));
   }
+});
+
+youtubeQuality.addEventListener("change", () => {
+  chrome.storage.local.set({ youtubeQuality: youtubeQuality.value || "best" });
 });
 
 clearButton.addEventListener("click", async () => {

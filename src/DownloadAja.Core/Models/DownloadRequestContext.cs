@@ -9,4 +9,5 @@ public sealed record DownloadRequestContext(
     string? UserAgent = null,
     string? CookieHeader = null,
     string? MediaKind = null,
-    string? SuggestedName = null);
+    string? SuggestedName = null,
+    string? FormatProfile = null);

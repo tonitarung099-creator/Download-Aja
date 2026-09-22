@@ -1,7 +1,7 @@
 <Window x:Class="DownloadAja.Desktop.AddUrlWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Tambah URL" Height="455" Width="660"
+        Title="Tambah URL" Height="500" Width="660"
         ResizeMode="NoResize" WindowStartupLocation="CenterOwner">
     <Grid Margin="18">
         <Grid.RowDefinitions>
@@ -27,8 +27,26 @@
                     Background="#EFF6FF"
                     BorderBrush="#BFDBFE"
                     BorderThickness="1">
-                <TextBlock Foreground="#1E3A8A" TextWrapping="Wrap"
-                           Text="YouTube publik terdeteksi — Download Aja akan memakai yt-dlp + Deno + FFmpeg, memilih kualitas terbaik yang tersedia, dan hanya mengambil satu video (bukan seluruh playlist)."/>
+                <StackPanel>
+                    <TextBlock Foreground="#1E3A8A" TextWrapping="Wrap"
+                               Text="YouTube publik terdeteksi — Download Aja memakai yt-dlp + Deno + FFmpeg dan hanya mengambil satu video (bukan seluruh playlist)."/>
+                    <Grid Margin="0,9,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="220"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Kualitas:" VerticalAlignment="Center" Margin="0,0,9,0" FontWeight="SemiBold"/>
+                        <ComboBox x:Name="YouTubeQualityBox" Grid.Column="1" SelectedIndex="0" Height="30">
+                            <ComboBoxItem Tag="best">Terbaik tersedia</ComboBoxItem>
+                            <ComboBoxItem Tag="2160p">Maks. 2160p (4K)</ComboBoxItem>
+                            <ComboBoxItem Tag="1440p">Maks. 1440p (2K)</ComboBoxItem>
+                            <ComboBoxItem Tag="1080p">Maks. 1080p</ComboBoxItem>
+                            <ComboBoxItem Tag="720p">Maks. 720p</ComboBoxItem>
+                            <ComboBoxItem Tag="480p">Maks. 480p</ComboBoxItem>
+                            <ComboBoxItem Tag="360p">Maks. 360p</ComboBoxItem>
+                        </ComboBox>
+                    </Grid>
+                </StackPanel>
             </Border>
         </StackPanel>
 

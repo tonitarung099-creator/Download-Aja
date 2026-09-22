@@ -101,6 +101,7 @@ public sealed class DownloadHistoryStore
                 : record.ErrorMessage,
             CreatedAt = record.CreatedAt == default ? DateTimeOffset.Now : record.CreatedAt,
             EngineKind = record.EngineKind,
+            YouTubeFormatProfile = YouTubeFormatProfiles.Normalize(record.YouTubeFormatProfile),
             Gid = null
         };
     }
@@ -130,6 +131,7 @@ public sealed class DownloadHistoryStore
         public long CompletedBytes { get; init; }
         public DownloadStatus Status { get; init; }
         public DownloadEngineKind EngineKind { get; init; } = DownloadEngineKind.Aria2;
+        public string? YouTubeFormatProfile { get; init; }
         public string? ErrorMessage { get; init; }
         public DateTimeOffset CreatedAt { get; init; }
 
@@ -144,6 +146,7 @@ public sealed class DownloadHistoryStore
             CompletedBytes = item.CompletedBytes,
             Status = item.Status,
             EngineKind = item.EngineKind,
+            YouTubeFormatProfile = item.YouTubeFormatProfile,
             ErrorMessage = item.ErrorMessage,
             CreatedAt = item.CreatedAt
         };

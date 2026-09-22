@@ -105,6 +105,20 @@
       line-height: 1.4;
       margin-bottom: 10px;
     }
+    .youtube-controls {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+    }
+    #youtubeQuality {
+      min-width: 180px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 7px 8px;
+      background: white;
+      color: #0f172a;
+    }
   </style>
 </head>
 <body>
@@ -116,7 +130,18 @@
   <section id="youtubeCard">
     <div class="title">Video YouTube</div>
     <div class="hint">Download video publik/non-DRM dari halaman YouTube aktif menggunakan yt-dlp + FFmpeg.</div>
-    <button id="downloadPage" class="primary">Download video halaman ini</button>
+    <div class="youtube-controls">
+      <select id="youtubeQuality">
+        <option value="best">Terbaik tersedia</option>
+        <option value="2160p">Maks. 2160p (4K)</option>
+        <option value="1440p">Maks. 1440p (2K)</option>
+        <option value="1080p">Maks. 1080p</option>
+        <option value="720p">Maks. 720p</option>
+        <option value="480p">Maks. 480p</option>
+        <option value="360p">Maks. 360p</option>
+      </select>
+      <button id="downloadPage" class="primary">Download</button>
+    </div>
   </section>
   <main id="list">
     <div class="empty">Membaca media pada tab ini…</div>

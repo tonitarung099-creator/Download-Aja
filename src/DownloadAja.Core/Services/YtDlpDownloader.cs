@@ -11,6 +11,7 @@ public sealed class YtDlpDownloader
         string url,
         string directory,
         string? suggestedName,
+        string? formatProfile = null,
         long speedLimitBytesPerSecond = 0,
         DownloadRequestContext? context = null)
     {
@@ -68,7 +69,7 @@ public sealed class YtDlpDownloader
         Add(psi, "--retries", "5");
         Add(psi, "--fragment-retries", "5");
         Add(psi, "--concurrent-fragments", "4");
-        Add(psi, "--format", "bestvideo*+bestaudio/best");
+        Add(psi, "--format", YouTubeFormatProfiles.GetFormatSelector(formatProfile));
         Add(psi, "--merge-output-format", "mkv");
         Add(psi, "--ffmpeg-location", ffmpegDirectory);
         Add(psi, "--js-runtimes", $"deno:{deno}");

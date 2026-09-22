@@ -113,6 +113,7 @@ public sealed class MainViewModel : IAsyncDisposable
         string directoryPath,
         bool startImmediately,
         string? outputFileName = null,
+        string? youtubeFormatProfile = null,
         DownloadRequestContext? requestContext = null,
         CancellationToken ct = default)
     {
@@ -124,6 +125,9 @@ public sealed class MainViewModel : IAsyncDisposable
                 "URL YouTube bukan URL video. Gunakan URL watch, shorts, live, embed, clip, atau youtu.be.");
 
         var isYouTube = isYouTubeHost && YouTubeUrlClassifier.IsVideoUrl(url);
+        var normalizedYouTubeProfile = isYouTube
+            ? YouTubeFormatProfiles.Normalize(requestContext?.FormatProfile ?? youtubeFormatProfile)
+            : YouTubeFormatProfiles.Best;
         var targetDirectory = string.IsNullOrWhiteSpace(directoryPath) ? DownloadDirectory : directoryPath;
         var normalizedOutputName = isStream || isYouTube ? null : NormalizeOutputFileName(outputFileName);
         var youtubeOutputName = isYouTube ? NormalizeYouTubeOutputName(outputFileName) : null;
@@ -148,7 +152,8 @@ public sealed class MainViewModel : IAsyncDisposable
                 ? DownloadEngineKind.Ffmpeg
                 : isYouTube
                     ? DownloadEngineKind.YtDlp
-                    : DownloadEngineKind.Aria2
+                    : DownloadEngineKind.Aria2,
+            YouTubeFormatProfile = normalizedYouTubeProfile
         };
 
         Downloads.Insert(0, item);
@@ -738,6 +743,7 @@ public sealed class MainViewModel : IAsyncDisposable
                 item.Url,
                 directory,
                 suggestedName,
+                item.YouTubeFormatProfile,
                 _settings.SpeedLimitBytesPerSecond,
                 requestContext);
         }

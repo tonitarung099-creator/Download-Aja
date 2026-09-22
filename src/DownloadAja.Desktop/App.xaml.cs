@@ -134,7 +134,8 @@ public partial class App : Application
                 ReadOptionalString(root, "userAgent"),
                 ReadOptionalString(root, "cookieHeader"),
                 ReadOptionalString(root, "mediaKind"),
-                ReadOptionalString(root, "suggestedName"));
+                ReadOptionalString(root, "suggestedName"),
+                ReadOptionalString(root, "formatProfile"));
 
             return true;
         }
