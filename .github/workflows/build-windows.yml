@@ -84,6 +84,41 @@ jobs:
           & artifacts/Download-Aja/tools/ffmpeg/ffmpeg.exe -version
           if ($LASTEXITCODE -ne 0) { throw "ffmpeg.exe gagal dijalankan." }
 
+      - name: Smoke test aria2 local HTTP download
+        shell: pwsh
+        run: |
+          $aria = "artifacts/Download-Aja/tools/aria2/aria2c.exe"
+          $serve = Join-Path $env:RUNNER_TEMP "downloadaja-http-source"
+          $out = Join-Path $env:RUNNER_TEMP "downloadaja-http-output"
+          New-Item -ItemType Directory -Force -Path $serve, $out | Out-Null
+
+          $source = Join-Path $serve "source.bin"
+          $bytes = New-Object byte[] (1024 * 1024)
+          for ($i = 0; $i -lt $bytes.Length; $i += 4096) {
+            $bytes[$i] = [byte](($i / 4096) % 251)
+          }
+          [IO.File]::WriteAllBytes($source, $bytes)
+
+          $server = Start-Process python -ArgumentList "-m","http.server","18765","--bind","127.0.0.1","--directory",$serve -PassThru -WindowStyle Hidden
+          try {
+            Start-Sleep -Seconds 2
+
+            & $aria --dir=$out --out=download.bin --file-allocation=none --allow-overwrite=true "http://127.0.0.1:18765/source.bin"
+            if ($LASTEXITCODE -ne 0) { throw "aria2 gagal mengunduh file HTTP lokal." }
+
+            $sourceHash = (Get-FileHash $source -Algorithm SHA256).Hash
+            $downloadHash = (Get-FileHash (Join-Path $out "download.bin") -Algorithm SHA256).Hash
+
+            if ($sourceHash -ne $downloadHash) {
+              throw "Hash hasil download aria2 tidak cocok."
+            }
+          }
+          finally {
+            if ($server -and -not $server.HasExited) {
+              Stop-Process -Id $server.Id -Force
+            }
+          }
+
       - name: Smoke test FFmpeg HLS remux
         shell: pwsh
         run: |
