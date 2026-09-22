@@ -179,6 +179,23 @@ public partial class DiagnosticsWindow : Window
         builder.AppendLine($"Portable root: {baseDir}");
         builder.AppendLine($"Data: {dataDir}");
         builder.AppendLine($"Logs: {logsDir}");
+
+        var buildInfoPath = Path.Combine(baseDir, "BUILD_INFO.txt");
+        if (File.Exists(buildInfoPath))
+        {
+            builder.AppendLine();
+            builder.AppendLine("Build:");
+            try
+            {
+                foreach (var line in File.ReadLines(buildInfoPath).Take(12))
+                    builder.AppendLine($"  {line}");
+            }
+            catch (Exception ex)
+            {
+                builder.AppendLine($"  Tidak dapat membaca BUILD_INFO.txt: {ex.Message}");
+            }
+        }
+
         builder.AppendLine();
         builder.AppendLine($"aria2: {(File.Exists(aria) ? "OK" : "TIDAK DITEMUKAN")} — {aria}");
         builder.AppendLine($"FFmpeg: {(File.Exists(ffmpeg) ? "OK" : "TIDAK DITEMUKAN")} — {ffmpeg}");
