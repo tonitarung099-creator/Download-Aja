@@ -15,6 +15,7 @@ public sealed class DownloadItem : INotifyPropertyChanged
     private long _completedBytes;
     private long _speedBytesPerSecond;
     private DownloadStatus _status = DownloadStatus.Menunggu;
+    private DownloadEngineKind _engineKind = DownloadEngineKind.Aria2;
 
     public string Id { get; init; } = Guid.NewGuid().ToString("N");
 
@@ -77,6 +78,7 @@ public sealed class DownloadItem : INotifyPropertyChanged
     }
 
     public DownloadStatus Status { get => _status; set => Set(ref _status, value); }
+    public DownloadEngineKind EngineKind { get => _engineKind; set => Set(ref _engineKind, value); }
 
     public string Category => ClassifyCategory(Name, Url);
     public double ProgressPercent => TotalBytes <= 0 ? 0 : Math.Clamp(CompletedBytes * 100d / TotalBytes, 0, 100);

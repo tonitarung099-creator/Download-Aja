@@ -92,7 +92,9 @@ public partial class App : Application
             context = new DownloadRequestContext(
                 ReadOptionalString(root, "referrer"),
                 ReadOptionalString(root, "userAgent"),
-                ReadOptionalString(root, "cookieHeader"));
+                ReadOptionalString(root, "cookieHeader"),
+                ReadOptionalString(root, "mediaKind"),
+                ReadOptionalString(root, "suggestedName"));
 
             return true;
         }

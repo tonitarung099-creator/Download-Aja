@@ -11,6 +11,8 @@ namespace DownloadAja.Desktop.ViewModels;
 public sealed class MainViewModel : IAsyncDisposable
 {
     private readonly Aria2EngineHost _engine = new();
+    private readonly FfmpegMediaDownloader _ffmpeg = new();
+    private readonly Dictionary<string, FfmpegMediaSession> _ffmpegSessions = new();
     private readonly DownloadHistoryStore _historyStore;
     private readonly DownloadSettingsStore _settingsStore;
     private DateTimeOffset _lastAutoSave = DateTimeOffset.MinValue;
@@ -94,12 +96,14 @@ public sealed class MainViewModel : IAsyncDisposable
         DownloadRequestContext? requestContext = null,
         CancellationToken ct = default)
     {
+        var isStream = IsStreamRequest(requestContext);
         var item = new DownloadItem
         {
             Url = url,
-            Name = TryGetFileName(url),
+            Name = isStream ? BuildStreamFileName(requestContext?.SuggestedName) : TryGetFileName(url),
             DirectoryPath = string.IsNullOrWhiteSpace(directoryPath) ? DownloadDirectory : directoryPath,
-            Status = DownloadStatus.Menunggu
+            Status = DownloadStatus.Menunggu,
+            EngineKind = isStream ? DownloadEngineKind.Ffmpeg : DownloadEngineKind.Aria2
         };
 
         Downloads.Insert(0, item);
@@ -133,8 +137,17 @@ public sealed class MainViewModel : IAsyncDisposable
         if (item.Status == DownloadStatus.Selesai)
             return;
 
-        var client = await _engine.EnsureStartedAsync(ct);
         item.ErrorMessage = null;
+
+        if (item.EngineKind == DownloadEngineKind.Ffmpeg)
+        {
+            StartFfmpeg(item, requestContext);
+            DownloadsView.Refresh();
+            await SaveStateAsync(ct);
+            return;
+        }
+
+        var client = await _engine.EnsureStartedAsync(ct);
 
         if (!string.IsNullOrWhiteSpace(item.Gid))
         {
@@ -226,6 +239,9 @@ public sealed class MainViewModel : IAsyncDisposable
 
     public async Task PauseAsync(DownloadItem item, CancellationToken ct = default)
     {
+        if (item.EngineKind == DownloadEngineKind.Ffmpeg)
+            throw new InvalidOperationException("Stream HLS/DASH belum mendukung jeda. Gunakan Hentikan lalu kirim ulang stream dari browser.");
+
         if (string.IsNullOrWhiteSpace(item.Gid) || item.Status != DownloadStatus.Mengunduh)
             return;
 
@@ -239,6 +255,18 @@ public sealed class MainViewModel : IAsyncDisposable
 
     public async Task StopAsync(DownloadItem item, CancellationToken ct = default)
     {
+        if (item.EngineKind == DownloadEngineKind.Ffmpeg)
+        {
+            if (_ffmpegSessions.Remove(item.Id, out var mediaSession))
+                await mediaSession.DisposeAsync();
+
+            item.SpeedBytesPerSecond = 0;
+            item.Status = DownloadStatus.Dibatalkan;
+            DownloadsView.Refresh();
+            await SaveStateAsync(ct);
+            return;
+        }
+
         if (!string.IsNullOrWhiteSpace(item.Gid))
         {
             var client = await _engine.EnsureStartedAsync(ct);
@@ -261,6 +289,9 @@ public sealed class MainViewModel : IAsyncDisposable
 
     public async Task RemoveAsync(DownloadItem item, CancellationToken ct = default)
     {
+        if (_ffmpegSessions.Remove(item.Id, out var mediaSession))
+            await mediaSession.DisposeAsync();
+
         if (!string.IsNullOrWhiteSpace(item.Gid) &&
             item.Status is DownloadStatus.Mengunduh or DownloadStatus.Dijeda)
         {
@@ -282,8 +313,7 @@ public sealed class MainViewModel : IAsyncDisposable
 
     public async Task RefreshAsync(CancellationToken ct = default)
     {
-        if (!_engine.IsRunning || _engine.Client is null) return;
-
+        if (_engine.IsRunning && _engine.Client is not null)
         foreach (var item in Downloads.ToArray())
         {
             if (string.IsNullOrWhiteSpace(item.Gid) ||
@@ -292,7 +322,7 @@ public sealed class MainViewModel : IAsyncDisposable
 
             try
             {
-                var status = await _engine.Client.TellStatusAsync(item.Gid, ct);
+                var status = await _engine.Client!.TellStatusAsync(item.Gid, ct);
                 ApplyStatus(item, status);
             }
             catch (Exception ex)
@@ -302,6 +332,46 @@ public sealed class MainViewModel : IAsyncDisposable
                     item.Status = DownloadStatus.Gagal;
                 item.SpeedBytesPerSecond = 0;
             }
+        }
+
+        foreach (var pair in _ffmpegSessions.ToArray())
+        {
+            var item = Downloads.FirstOrDefault(x => x.Id == pair.Key);
+            var session = pair.Value;
+
+            if (item is null)
+            {
+                _ffmpegSessions.Remove(pair.Key);
+                await session.DisposeAsync();
+                continue;
+            }
+
+            item.CompletedBytes = session.BytesWritten;
+            item.SpeedBytesPerSecond = session.SpeedBytesPerSecond;
+
+            if (!session.HasExited)
+                continue;
+
+            item.SpeedBytesPerSecond = 0;
+
+            if (session.ExitCode == 0 && File.Exists(session.OutputPath))
+            {
+                item.FilePath = session.OutputPath;
+                item.Name = Path.GetFileName(session.OutputPath);
+                item.TotalBytes = item.CompletedBytes;
+                item.Status = DownloadStatus.Selesai;
+                item.ErrorMessage = null;
+            }
+            else if (item.Status != DownloadStatus.Dibatalkan)
+            {
+                item.Status = DownloadStatus.Gagal;
+                item.ErrorMessage = string.IsNullOrWhiteSpace(session.ErrorText)
+                    ? "FFmpeg gagal menyelesaikan stream."
+                    : session.ErrorText;
+            }
+
+            _ffmpegSessions.Remove(pair.Key);
+            await session.DisposeAsync();
         }
 
         DownloadsView.Refresh();
@@ -330,6 +400,10 @@ public sealed class MainViewModel : IAsyncDisposable
         }
         finally
         {
+            foreach (var session in _ffmpegSessions.Values.ToArray())
+                await session.DisposeAsync();
+
+            _ffmpegSessions.Clear();
             await _engine.DisposeAsync();
         }
     }
@@ -411,6 +485,88 @@ public sealed class MainViewModel : IAsyncDisposable
     {
         if (!element.TryGetProperty(propertyName, out var value)) return 0;
         return long.TryParse(value.GetString(), out var parsed) ? parsed : 0;
+    }
+
+    private void StartFfmpeg(DownloadItem item, DownloadRequestContext? requestContext)
+    {
+        if (_ffmpegSessions.ContainsKey(item.Id))
+            return;
+
+        var directory = string.IsNullOrWhiteSpace(item.DirectoryPath)
+            ? DownloadDirectory
+            : item.DirectoryPath;
+
+        Directory.CreateDirectory(directory);
+
+        var fileName = BuildStreamFileName(
+            requestContext?.SuggestedName ?? item.Name);
+
+        var outputPath = GetUniquePath(directory, fileName);
+
+        item.EngineKind = DownloadEngineKind.Ffmpeg;
+        item.FilePath = outputPath;
+        item.Name = Path.GetFileName(outputPath);
+        item.TotalBytes = 0;
+        item.CompletedBytes = 0;
+        item.SpeedBytesPerSecond = 0;
+        item.Status = DownloadStatus.Mengunduh;
+
+        try
+        {
+            _ffmpegSessions[item.Id] = _ffmpeg.Start(item.Url, outputPath, requestContext);
+        }
+        catch
+        {
+            item.Status = DownloadStatus.Gagal;
+            throw;
+        }
+    }
+
+    private static bool IsStreamRequest(DownloadRequestContext? context)
+        => string.Equals(context?.MediaKind, "hls", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(context?.MediaKind, "dash", StringComparison.OrdinalIgnoreCase);
+
+    private static string BuildStreamFileName(string? suggestedName)
+    {
+        var baseName = Path.GetFileNameWithoutExtension(suggestedName ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(baseName) ||
+            baseName.Equals("master", StringComparison.OrdinalIgnoreCase) ||
+            baseName.Equals("index", StringComparison.OrdinalIgnoreCase) ||
+            baseName.Equals("playlist", StringComparison.OrdinalIgnoreCase))
+        {
+            baseName = $"media-{DateTime.Now:yyyyMMdd-HHmmss}";
+        }
+
+        foreach (var invalid in Path.GetInvalidFileNameChars())
+            baseName = baseName.Replace(invalid, '_');
+
+        baseName = baseName.Trim(' ', '.');
+        if (string.IsNullOrWhiteSpace(baseName))
+            baseName = $"media-{DateTime.Now:yyyyMMdd-HHmmss}";
+
+        if (baseName.Length > 120)
+            baseName = baseName[..120];
+
+        return baseName + ".mkv";
+    }
+
+    private static string GetUniquePath(string directory, string fileName)
+    {
+        var path = Path.Combine(directory, fileName);
+        if (!File.Exists(path))
+            return path;
+
+        var name = Path.GetFileNameWithoutExtension(fileName);
+        var ext = Path.GetExtension(fileName);
+
+        for (var i = 1; i < 10000; i++)
+        {
+            path = Path.Combine(directory, $"{name} ({i}){ext}");
+            if (!File.Exists(path))
+                return path;
+        }
+
+        return Path.Combine(directory, $"{name}-{Guid.NewGuid():N}{ext}");
     }
 
     private static string TryGetFileName(string url)

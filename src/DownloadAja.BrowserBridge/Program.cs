@@ -59,7 +59,9 @@ internal static class Program
             url = uri.AbsoluteUri,
             referrer = ReadCleanString(root, "referrer", 4096),
             userAgent = ReadCleanString(root, "userAgent", 4096),
-            cookieHeader = ReadCleanString(root, "cookieHeader", 262144)
+            cookieHeader = ReadCleanString(root, "cookieHeader", 262144),
+            mediaKind = ReadCleanString(root, "mediaKind", 32),
+            suggestedName = ReadCleanString(root, "suggestedName", 512)
         });
 
         return true;

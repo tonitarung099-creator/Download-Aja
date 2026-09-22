@@ -65,13 +65,15 @@ public sealed class DownloadHistoryStore
 
     private static DownloadItem ToItem(DownloadRecord record, string defaultDirectory)
     {
-        var status = record.Status switch
-        {
-            DownloadStatus.Selesai => DownloadStatus.Selesai,
-            DownloadStatus.Dibatalkan => DownloadStatus.Dibatalkan,
-            _ when record.CompletedBytes > 0 => DownloadStatus.Dijeda,
-            _ => DownloadStatus.Menunggu
-        };
+        var status = record.EngineKind == DownloadEngineKind.Ffmpeg && record.Status != DownloadStatus.Selesai
+            ? DownloadStatus.Gagal
+            : record.Status switch
+            {
+                DownloadStatus.Selesai => DownloadStatus.Selesai,
+                DownloadStatus.Dibatalkan => DownloadStatus.Dibatalkan,
+                _ when record.CompletedBytes > 0 => DownloadStatus.Dijeda,
+                _ => DownloadStatus.Menunggu
+            };
 
         return new DownloadItem
         {
@@ -84,8 +86,11 @@ public sealed class DownloadHistoryStore
             CompletedBytes = Math.Max(0, record.CompletedBytes),
             SpeedBytesPerSecond = 0,
             Status = status,
-            ErrorMessage = record.ErrorMessage,
+            ErrorMessage = record.EngineKind == DownloadEngineKind.Ffmpeg && status == DownloadStatus.Gagal
+                ? "Stream belum selesai. Kirim ulang media dari browser untuk memulai ulang."
+                : record.ErrorMessage,
             CreatedAt = record.CreatedAt == default ? DateTimeOffset.Now : record.CreatedAt,
+            EngineKind = record.EngineKind,
             Gid = null
         };
     }
@@ -114,6 +119,7 @@ public sealed class DownloadHistoryStore
         public long TotalBytes { get; init; }
         public long CompletedBytes { get; init; }
         public DownloadStatus Status { get; init; }
+        public DownloadEngineKind EngineKind { get; init; } = DownloadEngineKind.Aria2;
         public string? ErrorMessage { get; init; }
         public DateTimeOffset CreatedAt { get; init; }
 
@@ -127,6 +133,7 @@ public sealed class DownloadHistoryStore
             TotalBytes = item.TotalBytes,
             CompletedBytes = item.CompletedBytes,
             Status = item.Status,
+            EngineKind = item.EngineKind,
             ErrorMessage = item.ErrorMessage,
             CreatedAt = item.CreatedAt
         };

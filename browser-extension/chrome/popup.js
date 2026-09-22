@@ -41,10 +41,10 @@ function render(items) {
         <div class="meta">
           <span>${escapeText(typeText)}</span>
           <span>${formatBytes(item.size)}</span>
-          ${stream ? '<span class="stream">dukungan stream segera</span>' : ''}
+          ${stream ? '<span class="stream">HLS/DASH via FFmpeg</span>' : ''}
         </div>
         <div class="row">
-          <button class="primary download" data-index="${index}" ${item.downloadable === false ? "disabled" : ""}>
+          <button class="primary download" data-index="${index}">
             Download
           </button>
         </div>

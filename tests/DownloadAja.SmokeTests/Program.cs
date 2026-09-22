@@ -46,6 +46,7 @@ try
             TotalBytes = 1000,
             CompletedBytes = 1000,
             Status = DownloadStatus.Selesai,
+            EngineKind = DownloadEngineKind.Aria2,
             Gid = "old-finished-gid"
         },
         new DownloadItem
@@ -57,6 +58,7 @@ try
             TotalBytes = 2000,
             CompletedBytes = 750,
             Status = DownloadStatus.Mengunduh,
+            EngineKind = DownloadEngineKind.Aria2,
             Gid = "old-active-gid"
         }
     };
@@ -76,6 +78,26 @@ try
     Check(partial?.Status == DownloadStatus.Dijeda, "Download parsial harus dipulihkan sebagai Dijeda.");
     Check(partial?.CompletedBytes == 750, "Progress parsial harus dipertahankan.");
     Check(partial?.Gid is null, "GID sesi lama untuk download parsial harus dibuang.");
+
+    var ffmpegSource = new[]
+    {
+        new DownloadItem
+        {
+            Name = "stream.mkv",
+            Url = "https://example.com/master.m3u8",
+            DirectoryPath = tempDirectory,
+            FilePath = Path.Combine(tempDirectory, "stream.mkv"),
+            CompletedBytes = 1234,
+            Status = DownloadStatus.Mengunduh,
+            EngineKind = DownloadEngineKind.Ffmpeg
+        }
+    };
+
+    await store.SaveAsync(ffmpegSource);
+    var ffmpegRestored = await store.LoadAsync(tempDirectory);
+    Check(ffmpegRestored.Count == 1, "Riwayat stream FFmpeg harus dapat dimuat.");
+    Check(ffmpegRestored[0].EngineKind == DownloadEngineKind.Ffmpeg, "Engine FFmpeg harus dipertahankan.");
+    Check(ffmpegRestored[0].Status == DownloadStatus.Gagal, "Stream FFmpeg yang belum selesai harus dipulihkan sebagai Gagal.");
 }
 finally
 {

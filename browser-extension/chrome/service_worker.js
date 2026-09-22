@@ -67,7 +67,7 @@ function classifyMedia(details) {
   if (isStream) {
     return {
       kind: extension === "mpd" || contentType === "application/dash+xml" ? "dash" : "hls",
-      downloadable: false
+      downloadable: true
     };
   }
 
@@ -184,7 +184,7 @@ async function getCookieHeader(url) {
   }
 }
 
-async function sendToDesktop(url, referrer = "") {
+async function sendToDesktop(url, referrer = "", mediaKind = "", suggestedName = "") {
   if (!url)
     throw new Error("URL kosong.");
 
@@ -194,7 +194,9 @@ async function sendToDesktop(url, referrer = "") {
     url,
     referrer,
     userAgent: navigator.userAgent || "",
-    cookieHeader
+    cookieHeader,
+    mediaKind,
+    suggestedName
   });
 
   if (!response?.ok)
@@ -218,16 +220,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     if (message?.type === "downloadDetectedMedia") {
       const item = message.item;
-      if (!item?.url || item.downloadable === false) {
-        sendResponse({
-          ok: false,
-          error: "Stream HLS/DASH belum didukung oleh engine media."
-        });
+      if (!item?.url) {
+        sendResponse({ ok: false, error: "URL media tidak valid." });
         return;
       }
 
       try {
-        await sendToDesktop(item.url, item.pageUrl || "");
+        await sendToDesktop(
+          item.url,
+          item.pageUrl || "",
+          item.kind || "",
+          item.name || ""
+        );
         sendResponse({ ok: true });
       } catch (error) {
         sendResponse({ ok: false, error: String(error?.message || error) });
