@@ -319,20 +319,33 @@ jobs:
             $psi.Environment["DENO_DIR"] = $denoCache
 
             $first = [Diagnostics.Process]::Start($psi)
-            Start-Sleep -Seconds 2
 
-            if ($first.HasExited) {
-              throw "Download yt-dlp pertama selesai terlalu cepat untuk menguji resume."
+            $part = $null
+            for ($attempt = 0; $attempt -lt 60; $attempt++) {
+              Start-Sleep -Milliseconds 250
+
+              if ($first.HasExited) {
+                throw "Download yt-dlp pertama selesai sebelum file .part sempat diuji."
+              }
+
+              $candidate = Get-ChildItem -Path $out -Filter "*.part" -File -ErrorAction SilentlyContinue | Select-Object -First 1
+              if ($candidate -and $candidate.Length -gt 0) {
+                $part = $candidate
+                break
+              }
             }
 
+            if (-not $part) {
+              $first.Kill($true)
+              $first.WaitForExit()
+              throw "File .part yt-dlp tidak muncul dalam batas waktu test."
+            }
+
+            Start-Sleep -Milliseconds 500
             $first.Kill($true)
             $first.WaitForExit()
 
-            $part = Get-ChildItem -Path $out -Filter "*.part" -File | Select-Object -First 1
-            if (-not $part) {
-              throw "File .part yt-dlp tidak ditemukan setelah proses dihentikan."
-            }
-
+            $part.Refresh()
             $sourceLength = (Get-Item $source).Length
             if ($part.Length -le 0 -or $part.Length -ge $sourceLength) {
               throw "Ukuran file .part tidak valid untuk test resume: $($part.Length)."
