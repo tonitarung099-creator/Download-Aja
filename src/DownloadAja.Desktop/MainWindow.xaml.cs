@@ -592,14 +592,44 @@ public partial class MainWindow : Window
     private void OpenUrlMenu_Click(object sender, RoutedEventArgs e)
     {
         if (DownloadsGrid.SelectedItem is not DownloadItem item ||
-            !Uri.TryCreate(item.Url, UriKind.Absolute, out var uri))
+            !TryGetWebUri(item.Url, out var uri))
             return;
 
-        Process.Start(new ProcessStartInfo
+        TryOpenWebUri(uri);
+    }
+
+    private void TryOpenWebUri(Uri uri)
+    {
+        try
         {
-            FileName = uri.AbsoluteUri,
-            UseShellExecute = true
-        });
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = uri.AbsoluteUri,
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                this,
+                $"URL tidak dapat dibuka di browser.\n\n{ex.Message}",
+                "Download Aja",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+    }
+
+    private static bool TryGetWebUri(string? value, out Uri uri)
+    {
+        if (Uri.TryCreate(value, UriKind.Absolute, out var parsed) &&
+            (parsed.Scheme == Uri.UriSchemeHttp || parsed.Scheme == Uri.UriSchemeHttps))
+        {
+            uri = parsed;
+            return true;
+        }
+
+        uri = null!;
+        return false;
     }
 
     private async void DeleteFileMenu_Click(object sender, RoutedEventArgs e)
