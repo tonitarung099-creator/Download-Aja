@@ -9,6 +9,8 @@ Semua perubahan penting Download Aja dicatat di file ini.
 - Deno dibundel sebagai JavaScript runtime portable untuk dukungan YouTube.
 - FFmpeg + ffprobe dipakai untuk merge/post-processing media.
 - Tombol **Download video halaman ini** pada popup extension YouTube.
+- Pilihan kualitas YouTube tersimpan: Best, 2160p, 1440p, 1080p, 720p, 480p, 360p.
+- Tombol overlay pemutar menampilkan kualitas yang sedang dipilih.
 - Menu klik kanan khusus halaman YouTube.
 - Wizard browser mendukung Chrome, Edge, Brave, dan Vivaldi.
 - Wizard menerima beberapa ID extension sekaligus.
