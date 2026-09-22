@@ -10,6 +10,7 @@ public partial class BrowserIntegrationWindow : Window
     {
         InitializeComponent();
         ExtensionPathBox.Text = BrowserIntegrationService.ExtensionDirectory;
+        ExtensionIdBox.Text = BrowserIntegrationService.GetRegisteredExtensionId() ?? "";
         RefreshStatus();
     }
 
@@ -88,8 +89,9 @@ public partial class BrowserIntegrationWindow : Window
 
     private void RefreshStatus()
     {
+        var extensionId = BrowserIntegrationService.GetRegisteredExtensionId();
         StatusText.Text = BrowserIntegrationService.IsChromeRegistered()
-            ? "✓ Native Messaging Chrome sudah terdaftar pada akun Windows ini."
+            ? $"✓ Native Messaging Chrome terdaftar{(string.IsNullOrWhiteSpace(extensionId) ? "." : $" untuk extension {extensionId}.")}"
             : "Integrasi Native Messaging Chrome belum terdaftar.";
     }
 }

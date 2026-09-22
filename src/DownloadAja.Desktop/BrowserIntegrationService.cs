@@ -54,16 +54,46 @@ public static class BrowserIntegrationService
 
     public static void UnregisterChrome()
     {
+        Registry.CurrentUser.DeleteSubKeyTree(
+            $@"Software\Google\Chrome\NativeMessagingHosts\{HostName}",
+            throwOnMissingSubKey: false);
+
         try
         {
-            Registry.CurrentUser.DeleteSubKeyTree(
-                $@"Software\Google\Chrome\NativeMessagingHosts\{HostName}",
-                throwOnMissingSubKey: false);
+            if (File.Exists(HostManifestPath))
+                File.Delete(HostManifestPath);
         }
         catch
         {
-            // Pesan error nyata akan diberikan jika status dibaca kembali oleh UI.
-            throw;
+            // Registry sudah terhapus; manifest sisa tidak memblokir aplikasi.
+        }
+    }
+
+    public static string? GetRegisteredExtensionId()
+    {
+        try
+        {
+            if (!File.Exists(HostManifestPath))
+                return null;
+
+            using var document = JsonDocument.Parse(File.ReadAllText(HostManifestPath));
+            if (!document.RootElement.TryGetProperty("allowed_origins", out var origins) ||
+                origins.ValueKind != JsonValueKind.Array ||
+                origins.GetArrayLength() == 0)
+                return null;
+
+            var origin = origins[0].GetString();
+            const string prefix = "chrome-extension://";
+            if (string.IsNullOrWhiteSpace(origin) ||
+                !origin.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                return null;
+
+            var value = origin[prefix.Length..].TrimEnd('/');
+            return value.Length == 32 ? value : null;
+        }
+        catch
+        {
+            return null;
         }
     }
 
