@@ -10,24 +10,29 @@
 - [x] Workflow portable Windows
 
 ## Tahap 2 — Download nyata
-- [ ] Bundel aria2c pada portable artifact
-- [ ] Start/stop aria2 otomatis bersama aplikasi
-- [ ] Download HTTP/HTTPS nyata
-- [ ] Pause/resume/cancel
-- [ ] Poll progress, speed, ETA
-- [ ] Persistence riwayat dan queue
-- [ ] Penanganan error dan retry
+- [x] Bundel aria2c pada portable artifact
+- [x] Start/stop aria2 otomatis bersama aplikasi
+- [x] Download HTTP/HTTPS nyata
+- [x] Pause/resume/cancel
+- [x] Poll progress, speed, ETA
+- [x] Persistence riwayat download
+- [x] Resume file parsial setelah aplikasi dibuka ulang
+- [ ] Retry otomatis dengan kebijakan backoff
+- [ ] Queue download persisten
 
 ## Tahap 3 — Pengalaman setara download manager desktop
-- [ ] Single-instance + IPC untuk link dari browser
-- [ ] Kategori otomatis berdasarkan tipe file
+- [x] Single-instance + IPC untuk link dari browser
+- [x] Kategori otomatis berdasarkan tipe file
+- [x] Pencarian dan filter status/kategori
+- [x] Pengaturan koneksi per download
+- [x] Speed limiter untuk download baru
 - [ ] Scheduler dan queue
-- [ ] Speed limiter
 - [ ] Site credentials/cookies yang aman
-- [ ] Browser interception yang dapat dinyalakan/dimatikan
+- [ ] Browser interception yang dapat dinyalakan/dimatikan dari aplikasi
 - [ ] Deteksi media non-DRM
 - [ ] HLS/DASH non-DRM melalui FFmpeg
 - [ ] Drag/drop URL dan clipboard watcher
+- [ ] Pilihan folder tujuan per download
 
 ## Tahap 4 — Kualitas
 - [ ] Test unit core
