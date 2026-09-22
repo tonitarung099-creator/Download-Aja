@@ -66,3 +66,8 @@ docs/                         arsitektur dan roadmap
 ## Catatan media
 
 Deteksi media ditujukan untuk media langsung dan stream HLS/DASH **non-DRM**. Download Aja tidak dirancang untuk melewati DRM atau kontrol akses layanan.
+
+
+## Uji manual
+
+Checklist pengujian Windows tersedia di `docs/TEST_CHECKLIST.md`. Gunakan checklist tersebut saat menguji artifact portable agar bug dapat direproduksi dengan jelas.
