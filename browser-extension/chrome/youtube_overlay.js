@@ -3,6 +3,24 @@
   let lastUrl = location.href;
   let busy = false;
 
+  function qualityLabel(profile) {
+    switch (String(profile || "").toLowerCase()) {
+      case "2160p": return "2160p";
+      case "1440p": return "1440p";
+      case "1080p": return "1080p";
+      case "720p": return "720p";
+      case "480p": return "480p";
+      case "360p": return "360p";
+      default: return "Best";
+    }
+  }
+
+  async function setIdleLabel(button) {
+    const values = await chrome.storage.local.get("youtubeQuality");
+    if (button.isConnected && !busy)
+      button.textContent = `⬇ Download Aja · ${qualityLabel(values.youtubeQuality)}`;
+  }
+
   function isYouTubeVideoUrl(value) {
     try {
       const url = new URL(value);
@@ -50,7 +68,7 @@
     const button = document.createElement("button");
     button.id = BUTTON_ID;
     button.type = "button";
-    button.textContent = "⬇ Download Aja";
+    button.textContent = "⬇ Download Aja · Best";
     button.title = "Download video YouTube publik/non-DRM dengan Download Aja";
 
     Object.assign(button.style, {
@@ -92,9 +110,11 @@
       button.style.cursor = "default";
 
       try {
+        const values = await chrome.storage.local.get("youtubeQuality");
         const response = await chrome.runtime.sendMessage({
           type: "downloadYouTubePage",
-          url: location.href
+          url: location.href,
+          formatProfile: values.youtubeQuality || "best"
         });
 
         if (!response?.ok)
@@ -106,7 +126,9 @@
             return;
           busy = false;
           button.disabled = false;
-          button.textContent = "⬇ Download Aja";
+          setIdleLabel(button).catch(() => {
+            button.textContent = "⬇ Download Aja · Best";
+          });
           button.style.cursor = "pointer";
           button.style.background = "rgba(15,23,42,.92)";
         }, 1600);
@@ -121,6 +143,7 @@
     });
 
     host.appendChild(button);
+    setIdleLabel(button).catch(() => {});
   }
 
   function refresh() {
@@ -141,6 +164,15 @@
 
   window.addEventListener("yt-navigate-finish", refresh);
   window.addEventListener("popstate", refresh);
+
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== "local" || !changes.youtubeQuality)
+      return;
+
+    const button = document.getElementById(BUTTON_ID);
+    if (button)
+      setIdleLabel(button).catch(() => {});
+  });
 
   refresh();
   setInterval(refresh, 1500);
