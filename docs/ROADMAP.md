@@ -39,7 +39,8 @@
 - [x] HLS/DASH non-DRM melalui FFmpeg
 - [ ] Pause/resume khusus stream FFmpeg
 - [ ] Dukungan browser Chromium lain (Edge/Brave/Vivaldi) dari wizard yang sama
-- [ ] Aturan situs / pengecualian interception per domain
+- [x] Pengecualian interception per domain
+- [ ] Aturan situs lanjutan (per-domain cookie/media behavior)
 
 ## Tahap 4 — Kualitas
 - [x] Smoke test persistence dan klasifikasi

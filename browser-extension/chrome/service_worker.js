@@ -17,7 +17,8 @@ chrome.runtime.onInstalled.addListener(async () => {
   const current = await chrome.storage.local.get([
     "interceptDownloads",
     "sendSessionCookies",
-    "detectMedia"
+    "detectMedia",
+    "excludedHosts"
   ]);
 
   const defaults = {};
@@ -27,6 +28,8 @@ chrome.runtime.onInstalled.addListener(async () => {
     defaults.sendSessionCookies = false;
   if (typeof current.detectMedia !== "boolean")
     defaults.detectMedia = true;
+  if (!Array.isArray(current.excludedHosts))
+    defaults.excludedHosts = [];
 
   if (Object.keys(defaults).length)
     await chrome.storage.local.set(defaults);
@@ -167,6 +170,29 @@ chrome.tabs.onRemoved.addListener(tabId => {
   chrome.storage.session.remove(`media:${tabId}`).catch(() => {});
 });
 
+function hostMatchesRule(host, rule) {
+  const normalized = String(rule || "").trim().toLowerCase();
+  if (!normalized)
+    return false;
+
+  const suffix = normalized.startsWith("*.") ? normalized.slice(2) : normalized;
+  if (!suffix)
+    return false;
+
+  return host === suffix || host.endsWith("." + suffix);
+}
+
+async function isExcludedUrl(url) {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    const { excludedHosts = [] } = await chrome.storage.local.get("excludedHosts");
+    return Array.isArray(excludedHosts)
+      && excludedHosts.some(rule => hostMatchesRule(host, rule));
+  } catch {
+    return false;
+  }
+}
+
 async function getCookieHeader(url) {
   const { sendSessionCookies = false } = await chrome.storage.local.get("sendSessionCookies");
   if (!sendSessionCookies)
@@ -261,6 +287,9 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 chrome.downloads.onCreated.addListener(async item => {
   const { interceptDownloads = false } = await chrome.storage.local.get("interceptDownloads");
   if (!interceptDownloads || !item.url)
+    return;
+
+  if (await isExcludedUrl(item.url))
     return;
 
   try {

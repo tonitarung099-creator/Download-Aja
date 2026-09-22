@@ -10,6 +10,8 @@
     label:last-child { margin-bottom: 0; }
     p { color: #64748b; line-height: 1.5; margin: 5px 0 0; }
     .text { display: block; }
+    .section { margin-top: 22px; }
+    textarea { width: 100%; min-height: 120px; resize: vertical; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font: inherit; }
   </style>
 </head>
 <body>
@@ -38,6 +40,12 @@
         <p>Opsional untuk link yang membutuhkan login. Cookie hanya diteruskan ke aplikasi lokal untuk request download dan tidak disimpan di riwayat Download Aja.</p>
       </span>
     </label>
+
+    <div class="section">
+      <strong>Jangan intercept domain berikut</strong>
+      <p>Satu domain per baris. Contoh: <code>example.com</code> atau <code>*.example.org</code>. Subdomain ikut dikecualikan.</p>
+      <textarea id="excludedHosts" placeholder="example.com&#10;*.example.org"></textarea>
+    </div>
   </div>
   <script src="options.js"></script>
 </body>
