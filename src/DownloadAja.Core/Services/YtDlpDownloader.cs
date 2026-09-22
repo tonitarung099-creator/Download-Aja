@@ -30,6 +30,12 @@ public sealed class YtDlpDownloader
 
         Directory.CreateDirectory(directory);
 
+        var dataDirectory = Path.Combine(AppContext.BaseDirectory, "data");
+        var ytDlpCache = Path.Combine(dataDirectory, "yt-dlp-cache");
+        var denoCache = Path.Combine(dataDirectory, "deno-cache");
+        Directory.CreateDirectory(ytDlpCache);
+        Directory.CreateDirectory(denoCache);
+
         var outputTemplate = BuildOutputTemplate(suggestedName);
 
         var psi = new ProcessStartInfo
@@ -42,6 +48,12 @@ public sealed class YtDlpDownloader
             RedirectStandardError = true
         };
 
+        psi.Environment["DENO_DIR"] = denoCache;
+
+        Add(psi, "--ignore-config");
+        Add(psi, "--no-plugin-dirs");
+        Add(psi, "--no-cookies-from-browser");
+        Add(psi, "--cache-dir", ytDlpCache);
         Add(psi, "--no-playlist");
         Add(psi, "--windows-filenames");
         Add(psi, "--trim-filenames", "180");
