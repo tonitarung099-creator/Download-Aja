@@ -6,7 +6,10 @@
         WindowStartupLocation="CenterScreen"
         Background="#FFFFFF"
         Loaded="Window_Loaded"
-        Closing="Window_Closing">
+        Closing="Window_Closing"
+        AllowDrop="True"
+        DragOver="Window_DragOver"
+        Drop="Window_Drop">
     <DockPanel>
         <Border DockPanel.Dock="Top" Background="#FFFFFF" BorderBrush="#E2E8F0" BorderThickness="0,0,0,1">
             <Grid Margin="10,7">
@@ -135,7 +138,20 @@
                         <DataGridTextColumn Header="Nama" Binding="{Binding Name}" Width="2*"/>
                         <DataGridTextColumn Header="Kategori" Binding="{Binding Category}" Width="90"/>
                         <DataGridTextColumn Header="Ukuran" Binding="{Binding SizeText}" Width="155"/>
-                        <DataGridTextColumn Header="Progres" Binding="{Binding ProgressText}" Width="75"/>
+                        <DataGridTemplateColumn Header="Progres" Width="130">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="5,3">
+                                        <ProgressBar Minimum="0" Maximum="100" Value="{Binding ProgressPercent}" Height="18"/>
+                                        <TextBlock Text="{Binding ProgressText}"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   FontSize="11"
+                                                   FontWeight="SemiBold"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
                         <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="105"/>
                         <DataGridTextColumn Header="Kecepatan" Binding="{Binding SpeedText}" Width="105"/>
                         <DataGridTextColumn Header="Sisa" Binding="{Binding EtaText}" Width="80"/>
