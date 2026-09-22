@@ -142,6 +142,28 @@ jobs:
           Copy-Item tools/register-chrome-integration.ps1 artifacts/Download-Aja/register-chrome-integration.ps1
           Copy-Item THIRD_PARTY_NOTICES.md artifacts/Download-Aja/THIRD_PARTY_NOTICES.md
 
+      - name: Write portable build metadata
+        shell: pwsh
+        run: |
+          Set-Content -Path artifacts/Download-Aja/VERSION.txt -Value "0.4.0" -Encoding UTF8
+
+          $ariaHash = (Get-FileHash artifacts/Download-Aja/tools/aria2/aria2c.exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          $ffmpegHash = (Get-FileHash artifacts/Download-Aja/tools/ffmpeg/ffmpeg.exe -Algorithm SHA256).Hash.ToLowerInvariant()
+
+          $info = @(
+            "Download Aja 0.4.0",
+            "Commit: $env:GITHUB_SHA",
+            "Branch: $env:GITHUB_REF_NAME",
+            "Workflow run: $env:GITHUB_RUN_NUMBER",
+            "Build UTC: $([DateTime]::UtcNow.ToString('O'))",
+            "Runtime: win-x64 self-contained",
+            "aria2 SHA256: $ariaHash",
+            "FFmpeg SHA256: $ffmpegHash"
+          )
+
+          Set-Content -Path artifacts/Download-Aja/BUILD_INFO.txt -Value $info -Encoding UTF8
+          Copy-Item README.md artifacts/Download-Aja/README.md
+
       - name: Upload portable artifact
         uses: actions/upload-artifact@v4
         with:
