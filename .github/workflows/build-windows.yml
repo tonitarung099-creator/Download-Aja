@@ -1,0 +1,37 @@
+name: Build Windows Portable
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build desktop
+        run: dotnet build src/DownloadAja.Desktop/DownloadAja.Desktop.csproj -c Release
+
+      - name: Build browser bridge
+        run: dotnet build src/DownloadAja.BrowserBridge/DownloadAja.BrowserBridge.csproj -c Release
+
+      - name: Publish desktop self-contained
+        run: dotnet publish src/DownloadAja.Desktop/DownloadAja.Desktop.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o artifacts/Download-Aja
+
+      - name: Publish browser bridge
+        run: dotnet publish src/DownloadAja.BrowserBridge/DownloadAja.BrowserBridge.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o artifacts/Download-Aja/browser-bridge
+
+      - name: Copy Chrome extension
+        shell: pwsh
+        run: Copy-Item browser-extension/chrome artifacts/Download-Aja/browser-extension/chrome -Recurse
+
+      - name: Upload portable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Download-Aja-Windows-x64-Portable
+          path: artifacts/Download-Aja
