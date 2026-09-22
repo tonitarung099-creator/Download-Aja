@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Windows;
+using System.Windows.Threading;
 using DownloadAja.Core.Models;
 
 namespace DownloadAja.Desktop;
@@ -11,6 +12,10 @@ public partial class App : Application
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+
+        DispatcherUnhandledException += OnDispatcherUnhandledException;
+        AppDomain.CurrentDomain.UnhandledException += OnAppDomainUnhandledException;
+        TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
 
         _singleInstance = new SingleInstanceCoordinator();
 
@@ -54,10 +59,44 @@ public partial class App : Application
 
     protected override async void OnExit(ExitEventArgs e)
     {
+        DispatcherUnhandledException -= OnDispatcherUnhandledException;
+        AppDomain.CurrentDomain.UnhandledException -= OnAppDomainUnhandledException;
+        TaskScheduler.UnobservedTaskException -= OnUnobservedTaskException;
+
         if (_singleInstance is not null)
             await _singleInstance.DisposeAsync();
 
         base.OnExit(e);
+    }
+
+    private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+    {
+        var path = CrashLogger.Log("WPF Dispatcher", e.Exception);
+        e.Handled = true;
+
+        var location = string.IsNullOrWhiteSpace(path)
+            ? "Log gagal ditulis."
+            : $"Log: {path}";
+
+        MessageBox.Show(
+            $"Download Aja mengalami error yang tidak tertangani.\n\n{location}",
+            "Download Aja",
+            MessageBoxButton.OK,
+            MessageBoxImage.Error);
+
+        Shutdown(-1);
+    }
+
+    private static void OnAppDomainUnhandledException(object sender, UnhandledExceptionEventArgs e)
+    {
+        if (e.ExceptionObject is Exception exception)
+            CrashLogger.Log("AppDomain", exception);
+    }
+
+    private static void OnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+    {
+        CrashLogger.Log("TaskScheduler", e.Exception);
+        e.SetObserved();
     }
 
     private static bool TryParseBrowserRequest(

@@ -48,7 +48,7 @@
 - [x] Smoke test HLS lokal melalui FFmpeg
 - [ ] Test unit lebih lengkap
 - [ ] Test integrasi HTTP lokal untuk aria2
-- [ ] Crash logging lokal
+- [x] Crash logging lokal
 - [ ] Accessibility dan keyboard shortcuts
 - [ ] Dark mode
 - [ ] Update checker
