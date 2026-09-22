@@ -260,6 +260,15 @@ public partial class MainWindow : Window
         EngineStatusText.Text = $"{urls.Length} URL ditambahkan";
     }
 
+    private void BrowserIntegration_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new BrowserIntegrationWindow
+        {
+            Owner = this
+        };
+        dialog.ShowDialog();
+    }
+
     private async void Settings_Click(object sender, RoutedEventArgs e)
     {
         var dialog = new SettingsWindow(

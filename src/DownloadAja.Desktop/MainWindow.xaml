@@ -27,6 +27,7 @@
                     <Button Click="Delete_Click">🗑 Hapus</Button>
                     <Button Click="OpenFolder_Click">📁 Buka Folder</Button>
                     <Button Click="Scheduler_Click">🕒 Scheduler</Button>
+                    <Button Click="BrowserIntegration_Click">🌐 Browser</Button>
                 </StackPanel>
                 <TextBlock Grid.Column="1" Text="DOWNLOAD AJA" VerticalAlignment="Center"
                            HorizontalAlignment="Center" FontWeight="Bold" FontSize="18" Foreground="#0F172A"/>
