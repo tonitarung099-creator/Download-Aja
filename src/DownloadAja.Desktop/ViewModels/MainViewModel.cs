@@ -341,6 +341,9 @@ public sealed class MainViewModel : IAsyncDisposable
 
     public async Task StopAsync(DownloadItem item, CancellationToken ct = default)
     {
+        if (item.Status is DownloadStatus.Selesai or DownloadStatus.Gagal or DownloadStatus.Dibatalkan)
+            return;
+
         if (item.EngineKind == DownloadEngineKind.Ffmpeg)
         {
             if (_ffmpegSessions.Remove(item.Id, out var mediaSession))
